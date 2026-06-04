@@ -1,17 +1,24 @@
 import { useState, useEffect } from 'react'
-import { getItems, addItem, updateItem, toggleItem, deleteItem } from './storage'
+import {
+  getItems, addItem, updateItem, toggleItem, deleteItem,
+  getLocalItems, migrateLocalToSupabase,
+} from './storage'
 import EntryForm from './EntryForm'
 import EntryCard from './EntryCard'
 
 export default function App() {
-  const [entries, setEntries]         = useState([])
-  const [loading, setLoading]         = useState(true)
-  const [error, setError]             = useState(null)
+  const [entries, setEntries]           = useState([])
+  const [loading, setLoading]           = useState(true)
+  const [error, setError]               = useState(null)
   const [showForm, setShowForm]         = useState(false)
   const [editingEntry, setEditingEntry] = useState(null)
   const [searchPerson, setSearchPerson] = useState('')
+  const [localCount, setLocalCount]     = useState(0)
+  const [migrating, setMigrating]       = useState(false)
+  const [migrateError, setMigrateError] = useState(null)
 
   useEffect(() => {
+    setLocalCount(getLocalItems().length)
     loadEntries()
   }, [])
 
@@ -69,6 +76,21 @@ export default function App() {
     }
   }
 
+  async function handleMigrate() {
+    setMigrating(true)
+    setMigrateError(null)
+    try {
+      const count = await migrateLocalToSupabase()
+      setLocalCount(0)
+      await loadEntries()
+      alert(`✅ ¡${count} recuerdo${count !== 1 ? 's' : ''} importado${count !== 1 ? 's' : ''} correctamente!`)
+    } catch (err) {
+      setMigrateError(err.message)
+    } finally {
+      setMigrating(false)
+    }
+  }
+
   const filtered = (searchPerson.trim()
     ? entries.filter(e =>
         e.people && e.people.some(p =>
@@ -77,10 +99,8 @@ export default function App() {
       )
     : entries
   ).slice().sort((a, b) => {
-    // Favourites always come first
     if (a.favourite && !b.favourite) return -1
     if (!a.favourite && b.favourite) return 1
-    // Within each group, newest date first
     return new Date(b.date) - new Date(a.date)
   })
 
@@ -104,6 +124,24 @@ export default function App() {
       </header>
 
       <main className="main">
+        {/* Migration banner */}
+        {localCount > 0 && (
+          <div className="migration-banner">
+            <div className="migration-text">
+              <strong>📦 Tienes {localCount} recuerdo{localCount !== 1 ? 's' : ''} guardado{localCount !== 1 ? 's' : ''} localmente.</strong>
+              <span>Impórtalos a Supabase para no perderlos.</span>
+            </div>
+            <button
+              className="migration-btn"
+              onClick={handleMigrate}
+              disabled={migrating}
+            >
+              {migrating ? 'Importando…' : '☁️ Importar datos locales'}
+            </button>
+            {migrateError && <p className="migrate-error">⚠️ {migrateError}</p>}
+          </div>
+        )}
+
         {error && (
           <div className="error-banner" role="alert">
             <span>⚠️ {error}</span>

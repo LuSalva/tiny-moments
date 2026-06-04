@@ -42,6 +42,53 @@ button { font-family: inherit; }
   margin-top: 4px;
 }
 
+/* ─── Migration banner ───────────────────────────────── */
+.migration-banner {
+  background: #fdf3c0;
+  border: 1px solid #f0d060;
+  border-radius: 14px;
+  padding: 14px 16px;
+  margin-bottom: 14px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.migration-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 0.88rem;
+  color: #5a4d00;
+}
+
+.migration-btn {
+  white-space: nowrap;
+  padding: 9px 16px;
+  border: none;
+  border-radius: 10px;
+  background: #3d3348;
+  color: white;
+  font-family: inherit;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.migration-btn:hover   { opacity: 0.85; }
+.migration-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.migrate-error {
+  width: 100%;
+  color: #b0435a;
+  font-size: 0.8rem;
+  margin-top: 2px;
+}
+
 /* ─── Error banner ───────────────────────────────────── */
 .error-banner {
   display: flex;

@@ -1,66 +1,156 @@
-const STORAGE_KEY = 'abrazo-familiar-entries'
+import { createClient } from '@supabase/supabase-js'
+
+const supabaseUrl  = import.meta.env.VITE_SUPABASE_URL
+const supabaseKey  = import.meta.env.VITE_SUPABASE_ANON_KEY
+
+if (!supabaseUrl || !supabaseKey) {
+  throw new Error(
+    'Faltan las variables de entorno VITE_SUPABASE_URL y/o VITE_SUPABASE_ANON_KEY.'
+  )
+}
+
+const supabase = createClient(supabaseUrl, supabaseKey)
+
+// Map a Supabase row (snake_case) → app entry (camelCase)
+function fromRow(row) {
+  return {
+    id:        row.id,
+    title:     row.title,
+    type:      row.type,
+    note:      row.note      ?? '',
+    date:      row.date,
+    photo:     row.photo     ?? null,
+    location:  row.location  ?? '',
+    people:    row.people    ?? [],
+    favourite: row.favourite ?? false,
+    dateAdded: row.date_added,
+  }
+}
+
+// Map an app entry (camelCase) → Supabase row (snake_case)
+function toRow(item) {
+  return {
+    title:    item.title,
+    type:     item.type,
+    note:     item.note     || null,
+    date:     item.date,
+    photo:    item.photo    || null,
+    location: item.location || null,
+    people:   item.people   ?? [],
+    favourite: item.favourite ?? false,
+  }
+}
 
 export async function getItems() {
-  try {
-    const data = localStorage.getItem(STORAGE_KEY)
-    return data ? JSON.parse(data) : []
-  } catch (err) {
-    console.error('[storage] getItems failed:', err)
-    throw new Error('No se pudieron cargar los recuerdos. Por favor, inténtalo de nuevo.')
+  const { data, error } = await supabase
+    .from('entries')
+    .select('*')
+    .order('favourite', { ascending: false })
+    .order('date',      { ascending: false })
+
+  if (error) {
+    console.error('[storage] getItems failed:', error)
+    throw new Error('No se pudieron cargar los recuerdos. Comprueba tu conexión e inténtalo de nuevo.')
   }
+  return data.map(fromRow)
 }
 
 export async function addItem(item) {
-  console.log('[storage] addItem called with:', item)
-  try {
-    const entries = await getItems()
-    console.log('[storage] existing entries count:', entries.length)
-    const newEntry = {
-      ...item,
-      id: crypto.randomUUID(),
-      dateAdded: new Date().toISOString(),
-    }
-    console.log('[storage] saving new entry:', newEntry)
-    localStorage.setItem(STORAGE_KEY, JSON.stringify([newEntry, ...entries]))
-    console.log('[storage] addItem success')
-    return newEntry
-  } catch (err) {
-    console.error('[storage] addItem failed:', err)
+  const { data, error } = await supabase
+    .from('entries')
+    .insert(toRow(item))
+    .select()
+    .single()
+
+  if (error) {
+    console.error('[storage] addItem failed:', error)
     throw new Error('No se pudo guardar el recuerdo. Por favor, inténtalo de nuevo.')
   }
+  return fromRow(data)
 }
 
 export async function updateItem(id, updates) {
-  try {
-    const entries = await getItems()
-    const updated = entries.map(e => e.id === id ? { ...e, ...updates } : e)
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated))
-  } catch (err) {
-    console.error('[storage] updateItem failed:', err)
+  const { error } = await supabase
+    .from('entries')
+    .update(toRow(updates))
+    .eq('id', id)
+
+  if (error) {
+    console.error('[storage] updateItem failed:', error)
     throw new Error('No se pudo actualizar el recuerdo. Por favor, inténtalo de nuevo.')
   }
 }
 
 export async function toggleItem(id) {
-  try {
-    const entries = await getItems()
-    const updated = entries.map(e =>
-      e.id === id ? { ...e, favourite: !e.favourite } : e
-    )
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated))
-  } catch (err) {
-    console.error('[storage] toggleItem failed:', err)
+  // Read current value first, then flip it
+  const { data: row, error: fetchError } = await supabase
+    .from('entries')
+    .select('favourite')
+    .eq('id', id)
+    .single()
+
+  if (fetchError) {
+    console.error('[storage] toggleItem fetch failed:', fetchError)
+    throw new Error('No se pudo actualizar el recuerdo. Por favor, inténtalo de nuevo.')
+  }
+
+  const { error } = await supabase
+    .from('entries')
+    .update({ favourite: !row.favourite })
+    .eq('id', id)
+
+  if (error) {
+    console.error('[storage] toggleItem update failed:', error)
     throw new Error('No se pudo actualizar el recuerdo. Por favor, inténtalo de nuevo.')
   }
 }
 
 export async function deleteItem(id) {
-  try {
-    const entries = await getItems()
-    const updated = entries.filter(e => e.id !== id)
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated))
-  } catch (err) {
-    console.error('[storage] deleteItem failed:', err)
+  const { error } = await supabase
+    .from('entries')
+    .delete()
+    .eq('id', id)
+
+  if (error) {
+    console.error('[storage] deleteItem failed:', error)
     throw new Error('No se pudo eliminar el recuerdo. Por favor, inténtalo de nuevo.')
   }
+}
+
+// ─── Migration helper (localStorage → Supabase) ──────────────────────────────
+const LS_KEY = 'abrazo-familiar-entries'
+
+export function getLocalItems() {
+  try {
+    const raw = localStorage.getItem(LS_KEY)
+    return raw ? JSON.parse(raw) : []
+  } catch {
+    return []
+  }
+}
+
+export async function migrateLocalToSupabase() {
+  const local = getLocalItems()
+  if (local.length === 0) return 0
+
+  const rows = local.map(e => ({
+    title:     e.title,
+    type:      e.type,
+    note:      e.note      || null,
+    date:      e.date,
+    photo:     e.photo     || null,
+    location:  e.location  || null,
+    people:    e.people    ?? [],
+    favourite: e.favourite ?? false,
+    date_added: e.dateAdded || new Date().toISOString(),
+  }))
+
+  const { error } = await supabase.from('entries').insert(rows)
+  if (error) {
+    console.error('[storage] migration failed:', error)
+    throw new Error('La migración falló. Por favor, inténtalo de nuevo.')
+  }
+
+  localStorage.removeItem(LS_KEY)
+  return local.length
 }
