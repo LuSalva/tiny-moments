@@ -3,10 +3,28 @@ import {
   getItems, addItem, updateItem, toggleItem, deleteItem,
   getLocalItems, migrateLocalToSupabase,
 } from './storage'
+import { useAuth } from './AuthContext'
+import LoginScreen from './LoginScreen'
 import EntryForm from './EntryForm'
 import EntryCard from './EntryCard'
 
 export default function App() {
+  const { session, signOut } = useAuth()
+
+  // Show a neutral loading state while Supabase restores the session
+  if (session === undefined) {
+    return <div className="loading">Cargando… 💛</div>
+  }
+
+  // Not logged in → show login screen
+  if (!session) {
+    return <LoginScreen />
+  }
+
+  return <AppShell signOut={signOut} />
+}
+
+function AppShell({ signOut }) {
   const [entries, setEntries]           = useState([])
   const [loading, setLoading]           = useState(true)
   const [error, setError]               = useState(null)
@@ -119,6 +137,9 @@ export default function App() {
   return (
     <div className="app">
       <header className="header">
+        <button className="logout-btn" onClick={signOut} title="Cerrar sesión">
+          Cerrar sesión
+        </button>
         <h1>🌈 Abrazo Familiar</h1>
         <p className="subtitle">Un diario de momentos especiales 💕</p>
       </header>

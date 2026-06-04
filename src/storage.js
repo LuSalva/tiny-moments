@@ -1,19 +1,4 @@
-import { createClient } from '@supabase/supabase-js'
-
-const supabaseUrl  = import.meta.env.VITE_SUPABASE_URL
-const supabaseKey  = import.meta.env.VITE_SUPABASE_ANON_KEY
-
-if (!supabaseUrl || !supabaseKey) {
-  throw new Error(
-    'Faltan las variables de entorno VITE_SUPABASE_URL y/o VITE_SUPABASE_ANON_KEY.'
-  )
-}
-
-const supabase = createClient(supabaseUrl, supabaseKey)
-
-// Startup diagnostics — confirm env vars were baked in at build time
-console.log('[storage] Supabase URL:', supabaseUrl)
-console.log('[storage] Anon key starts with:', supabaseKey?.slice(0, 20) + '…')
+import { supabase } from './supabase'
 
 // Map a Supabase row (snake_case) → app entry (camelCase)
 function fromRow(row) {
@@ -34,33 +19,28 @@ function fromRow(row) {
 // Map an app entry (camelCase) → Supabase row (snake_case)
 function toRow(item) {
   return {
-    title:    item.title,
-    type:     item.type,
-    note:     item.note     || null,
-    date:     item.date,
-    photo:    item.photo    || null,
-    location: item.location || null,
-    people:   item.people   ?? [],
+    title:     item.title,
+    type:      item.type,
+    note:      item.note     || null,
+    date:      item.date,
+    photo:     item.photo    || null,
+    location:  item.location || null,
+    people:    item.people   ?? [],
     favourite: item.favourite ?? false,
   }
 }
 
 export async function getItems() {
-  console.log('[storage] getItems: querying entries table…')
   const { data, error } = await supabase
     .from('entries')
     .select('*')
 
   if (error) {
-    console.error('[storage] getItems failed — code:', error.code, '| message:', error.message, '| details:', error.details, '| hint:', error.hint)
+    console.error('[storage] getItems failed:', error)
     throw new Error(
-      `Error al cargar: ${error.message || error.code || 'desconocido'} ` +
-      `(código ${error.code ?? '?'}). ` +
-      `${error.hint ? 'Sugerencia: ' + error.hint : ''}`
+      `Error al cargar: ${error.message} (código ${error.code ?? '?'})`
     )
   }
-
-  console.log('[storage] getItems OK — rows returned:', data.length)
   return data.map(fromRow)
 }
 
@@ -91,7 +71,6 @@ export async function updateItem(id, updates) {
 }
 
 export async function toggleItem(id) {
-  // Read current value first, then flip it
   const { data: row, error: fetchError } = await supabase
     .from('entries')
     .select('favourite')
@@ -143,14 +122,14 @@ export async function migrateLocalToSupabase() {
   if (local.length === 0) return 0
 
   const rows = local.map(e => ({
-    title:     e.title,
-    type:      e.type,
-    note:      e.note      || null,
-    date:      e.date,
-    photo:     e.photo     || null,
-    location:  e.location  || null,
-    people:    e.people    ?? [],
-    favourite: e.favourite ?? false,
+    title:      e.title,
+    type:       e.type,
+    note:       e.note      || null,
+    date:       e.date,
+    photo:      e.photo     || null,
+    location:   e.location  || null,
+    people:     e.people    ?? [],
+    favourite:  e.favourite ?? false,
     date_added: e.dateAdded || new Date().toISOString(),
   }))
 
