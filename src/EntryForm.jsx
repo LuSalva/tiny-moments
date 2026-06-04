@@ -15,11 +15,26 @@ const LOCATIONS = [
   { value: 'other',      label: '✏️ Otro' },
 ]
 
-function toBase64(file) {
+const MAX_WIDTH = 800
+const JPEG_QUALITY = 0.7
+
+function compressImage(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader()
-    reader.onload = () => resolve(reader.result)
     reader.onerror = reject
+    reader.onload = (e) => {
+      const img = new Image()
+      img.onerror = reject
+      img.onload = () => {
+        const scale = img.width > MAX_WIDTH ? MAX_WIDTH / img.width : 1
+        const canvas = document.createElement('canvas')
+        canvas.width  = Math.round(img.width  * scale)
+        canvas.height = Math.round(img.height * scale)
+        canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height)
+        resolve(canvas.toDataURL('image/jpeg', JPEG_QUALITY))
+      }
+      img.src = e.target.result
+    }
     reader.readAsDataURL(file)
   })
 }
@@ -46,9 +61,9 @@ export default function EntryForm({ onSave, onCancel }) {
   async function handlePhotoChange(e) {
     const file = e.target.files[0]
     if (!file) return
-    const base64 = await toBase64(file)
-    setPhoto(base64)
-    setPhotoPreview(base64)
+    const compressed = await compressImage(file)
+    setPhoto(compressed)
+    setPhotoPreview(compressed)
   }
 
   function addPerson() {
