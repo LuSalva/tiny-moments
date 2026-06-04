@@ -43,15 +43,23 @@ function todayString() {
   return new Date().toISOString().split('T')[0]
 }
 
-export default function EntryForm({ onSave, onCancel }) {
-  const [title, setTitle]               = useState('')
-  const [type, setType]                 = useState('recuerdo')
-  const [note, setNote]                 = useState('')
-  const [date, setDate]                 = useState(todayString())
-  const [photo, setPhoto]               = useState(null)
-  const [photoPreview, setPhotoPreview] = useState(null)
-  const [location, setLocation]         = useState('home')
-  const [locationOther, setLocationOther] = useState('')
+const KNOWN_LOCATIONS = ['home', 'veldhoven']
+
+export default function EntryForm({ onSave, onCancel, initialEntry }) {
+  const isEditing = Boolean(initialEntry)
+
+  // Derive initial location field state from stored value
+  const initLocation = initialEntry?.location ?? 'home'
+  const initIsOther  = initLocation && !KNOWN_LOCATIONS.includes(initLocation)
+
+  const [title, setTitle]               = useState(initialEntry?.title    ?? '')
+  const [type, setType]                 = useState(initialEntry?.type     ?? 'recuerdo')
+  const [note, setNote]                 = useState(initialEntry?.note     ?? '')
+  const [date, setDate]                 = useState(initialEntry?.date     ?? todayString())
+  const [photo, setPhoto]               = useState(initialEntry?.photo    ?? null)
+  const [photoPreview, setPhotoPreview] = useState(initialEntry?.photo    ?? null)
+  const [location, setLocation]         = useState(initIsOther ? 'other' : initLocation)
+  const [locationOther, setLocationOther] = useState(initIsOther ? initLocation : '')
   const [people, setPeople]             = useState([])
   const [personInput, setPersonInput]   = useState('')
   const [saving, setSaving]             = useState(false)
@@ -121,7 +129,7 @@ export default function EntryForm({ onSave, onCancel }) {
     <form className="entry-form" onSubmit={e => e.preventDefault()}>
       <div className="form-header">
         <button type="button" className="back-button" onClick={onCancel}>← Volver</button>
-        <h2>Nuevo recuerdo</h2>
+        <h2>{isEditing ? 'Editar recuerdo' : 'Nuevo recuerdo'}</h2>
       </div>
 
       {/* Title */}
@@ -267,7 +275,7 @@ export default function EntryForm({ onSave, onCancel }) {
       <div className="form-actions">
         <button type="button" className="btn-cancel" onClick={onCancel}>Cancelar</button>
         <button type="button" className="btn-save" disabled={saving} onClick={handleSave}>
-          {saving ? 'Guardando...' : '💾 Guardar recuerdo'}
+          {saving ? 'Guardando...' : isEditing ? '💾 Guardar cambios' : '💾 Guardar recuerdo'}
         </button>
       </div>
     </form>

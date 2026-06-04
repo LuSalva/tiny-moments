@@ -188,7 +188,7 @@ button { font-family: inherit; }
 
 .card-actions { display: flex; gap: 2px; flex-shrink: 0; }
 
-.fav-btn, .delete-btn {
+.fav-btn, .edit-btn, .delete-btn {
   background: none;
   border: none;
   cursor: pointer;
@@ -199,7 +199,7 @@ button { font-family: inherit; }
   transition: background 0.15s;
 }
 
-.fav-btn:hover, .delete-btn:hover { background: rgba(0,0,0,0.06); }
+.fav-btn:hover, .edit-btn:hover, .delete-btn:hover { background: rgba(0,0,0,0.06); }
 
 .delete-btn--confirm {
   font-size: 0.7rem;

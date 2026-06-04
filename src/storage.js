@@ -30,6 +30,17 @@ export async function addItem(item) {
   }
 }
 
+export async function updateItem(id, updates) {
+  try {
+    const entries = await getItems()
+    const updated = entries.map(e => e.id === id ? { ...e, ...updates } : e)
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated))
+  } catch (err) {
+    console.error('[storage] updateItem failed:', err)
+    throw new Error('No se pudo actualizar el recuerdo. Por favor, inténtalo de nuevo.')
+  }
+}
+
 export async function toggleItem(id) {
   try {
     const entries = await getItems()

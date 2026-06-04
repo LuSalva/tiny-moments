@@ -29,7 +29,7 @@ function formatDate(dateStr) {
   return `${day}/${month}/${year}`
 }
 
-export default function EntryCard({ entry, onToggle, onDelete }) {
+export default function EntryCard({ entry, onToggle, onEdit, onDelete }) {
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [expanded, setExpanded]           = useState(false)
 
@@ -71,6 +71,14 @@ export default function EntryCard({ entry, onToggle, onDelete }) {
             aria-label="Favorito"
           >
             {entry.favourite ? '❤️' : '🤍'}
+          </button>
+          <button
+            className="edit-btn"
+            onClick={() => onEdit(entry)}
+            title="Editar"
+            aria-label="Editar"
+          >
+            ✏️
           </button>
           <button
             className={`delete-btn${confirmDelete ? ' delete-btn--confirm' : ''}`}

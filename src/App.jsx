@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { getItems, addItem, toggleItem, deleteItem } from './storage'
+import { getItems, addItem, updateItem, toggleItem, deleteItem } from './storage'
 import EntryForm from './EntryForm'
 import EntryCard from './EntryCard'
 
@@ -7,7 +7,8 @@ export default function App() {
   const [entries, setEntries]         = useState([])
   const [loading, setLoading]         = useState(true)
   const [error, setError]             = useState(null)
-  const [showForm, setShowForm]       = useState(false)
+  const [showForm, setShowForm]         = useState(false)
+  const [editingEntry, setEditingEntry] = useState(null)
   const [searchPerson, setSearchPerson] = useState('')
 
   useEffect(() => {
@@ -33,6 +34,23 @@ export default function App() {
     setShowForm(false)
   }
 
+  function handleEdit(entry) {
+    setEditingEntry(entry)
+    setShowForm(true)
+  }
+
+  async function handleUpdate(item) {
+    await updateItem(editingEntry.id, item)
+    await loadEntries()
+    setEditingEntry(null)
+    setShowForm(false)
+  }
+
+  function handleCloseForm() {
+    setEditingEntry(null)
+    setShowForm(false)
+  }
+
   async function handleToggle(id) {
     try {
       await toggleItem(id)
@@ -51,18 +69,29 @@ export default function App() {
     }
   }
 
-  const filtered = searchPerson.trim()
+  const filtered = (searchPerson.trim()
     ? entries.filter(e =>
         e.people && e.people.some(p =>
           p.toLowerCase().includes(searchPerson.toLowerCase())
         )
       )
     : entries
+  ).slice().sort((a, b) => {
+    // Favourites always come first
+    if (a.favourite && !b.favourite) return -1
+    if (!a.favourite && b.favourite) return 1
+    // Within each group, newest date first
+    return new Date(b.date) - new Date(a.date)
+  })
 
   if (showForm) {
     return (
       <div className="app">
-        <EntryForm onSave={handleAdd} onCancel={() => setShowForm(false)} />
+        <EntryForm
+          onSave={editingEntry ? handleUpdate : handleAdd}
+          onCancel={handleCloseForm}
+          initialEntry={editingEntry}
+        />
       </div>
     )
   }
@@ -129,6 +158,7 @@ export default function App() {
                 key={entry.id}
                 entry={entry}
                 onToggle={handleToggle}
+                onEdit={handleEdit}
                 onDelete={handleDelete}
               />
             ))}
