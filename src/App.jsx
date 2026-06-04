@@ -28,13 +28,9 @@ export default function App() {
   }
 
   async function handleAdd(item) {
-    try {
-      await addItem(item)
-      await loadEntries()
-      setShowForm(false)
-    } catch (err) {
-      setError(err.message)
-    }
+    await addItem(item)
+    await loadEntries()
+    setShowForm(false)
   }
 
   async function handleToggle(id) {

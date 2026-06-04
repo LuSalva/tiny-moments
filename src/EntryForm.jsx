@@ -41,6 +41,7 @@ export default function EntryForm({ onSave, onCancel }) {
   const [personInput, setPersonInput]   = useState('')
   const [saving, setSaving]             = useState(false)
   const [errors, setErrors]             = useState({})
+  const [saveError, setSaveError]       = useState(null)
 
   async function handlePhotoChange(e) {
     const file = e.target.files[0]
@@ -76,29 +77,33 @@ export default function EntryForm({ onSave, onCancel }) {
     return errs
   }
 
-  async function handleSubmit(e) {
-    e.preventDefault()
+  async function handleSave() {
+    setSaveError(null)
     const errs = validate()
     if (Object.keys(errs).length > 0) {
       setErrors(errs)
       return
     }
     setSaving(true)
-    const locationValue = location === 'other' ? locationOther.trim() || 'Otro' : location
-    await onSave({
-      title: title.trim(),
-      type,
-      note: note.trim(),
-      date,
-      photo,
-      location: locationValue,
-      people,
-    })
-    setSaving(false)
+    try {
+      const locationValue = location === 'other' ? locationOther.trim() || 'Otro' : location
+      await onSave({
+        title: title.trim(),
+        type,
+        note: note.trim(),
+        date,
+        photo,
+        location: locationValue,
+        people,
+      })
+    } catch (err) {
+      setSaveError(err.message || 'No se pudo guardar. Por favor, inténtalo de nuevo.')
+      setSaving(false)
+    }
   }
 
   return (
-    <form className="entry-form" onSubmit={handleSubmit}>
+    <form className="entry-form" onSubmit={e => e.preventDefault()}>
       <div className="form-header">
         <button type="button" className="back-button" onClick={onCancel}>← Volver</button>
         <h2>Nuevo recuerdo</h2>
@@ -235,10 +240,18 @@ export default function EntryForm({ onSave, onCancel }) {
         )}
       </div>
 
+      {/* Save error */}
+      {saveError && (
+        <div className="error-banner" role="alert">
+          <span>⚠️ {saveError}</span>
+          <button type="button" onClick={() => setSaveError(null)} aria-label="Cerrar">✕</button>
+        </div>
+      )}
+
       {/* Actions */}
       <div className="form-actions">
         <button type="button" className="btn-cancel" onClick={onCancel}>Cancelar</button>
-        <button type="submit" className="btn-save" disabled={saving}>
+        <button type="button" className="btn-save" disabled={saving} onClick={handleSave}>
           {saving ? 'Guardando...' : '💾 Guardar recuerdo'}
         </button>
       </div>
