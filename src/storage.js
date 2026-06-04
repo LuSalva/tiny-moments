@@ -4,22 +4,28 @@ export async function getItems() {
   try {
     const data = localStorage.getItem(STORAGE_KEY)
     return data ? JSON.parse(data) : []
-  } catch {
+  } catch (err) {
+    console.error('[storage] getItems failed:', err)
     throw new Error('No se pudieron cargar los recuerdos. Por favor, inténtalo de nuevo.')
   }
 }
 
 export async function addItem(item) {
+  console.log('[storage] addItem called with:', item)
   try {
     const entries = await getItems()
+    console.log('[storage] existing entries count:', entries.length)
     const newEntry = {
       ...item,
       id: crypto.randomUUID(),
       dateAdded: new Date().toISOString(),
     }
+    console.log('[storage] saving new entry:', newEntry)
     localStorage.setItem(STORAGE_KEY, JSON.stringify([newEntry, ...entries]))
+    console.log('[storage] addItem success')
     return newEntry
-  } catch {
+  } catch (err) {
+    console.error('[storage] addItem failed:', err)
     throw new Error('No se pudo guardar el recuerdo. Por favor, inténtalo de nuevo.')
   }
 }
@@ -31,7 +37,8 @@ export async function toggleItem(id) {
       e.id === id ? { ...e, favourite: !e.favourite } : e
     )
     localStorage.setItem(STORAGE_KEY, JSON.stringify(updated))
-  } catch {
+  } catch (err) {
+    console.error('[storage] toggleItem failed:', err)
     throw new Error('No se pudo actualizar el recuerdo. Por favor, inténtalo de nuevo.')
   }
 }
@@ -41,7 +48,8 @@ export async function deleteItem(id) {
     const entries = await getItems()
     const updated = entries.filter(e => e.id !== id)
     localStorage.setItem(STORAGE_KEY, JSON.stringify(updated))
-  } catch {
+  } catch (err) {
+    console.error('[storage] deleteItem failed:', err)
     throw new Error('No se pudo eliminar el recuerdo. Por favor, inténtalo de nuevo.')
   }
 }
