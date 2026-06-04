@@ -11,6 +11,10 @@ if (!supabaseUrl || !supabaseKey) {
 
 const supabase = createClient(supabaseUrl, supabaseKey)
 
+// Startup diagnostics — confirm env vars were baked in at build time
+console.log('[storage] Supabase URL:', supabaseUrl)
+console.log('[storage] Anon key starts with:', supabaseKey?.slice(0, 20) + '…')
+
 // Map a Supabase row (snake_case) → app entry (camelCase)
 function fromRow(row) {
   return {
@@ -42,16 +46,21 @@ function toRow(item) {
 }
 
 export async function getItems() {
+  console.log('[storage] getItems: querying entries table…')
   const { data, error } = await supabase
     .from('entries')
     .select('*')
-    .order('favourite', { ascending: false })
-    .order('date',      { ascending: false })
 
   if (error) {
-    console.error('[storage] getItems failed:', error)
-    throw new Error('No se pudieron cargar los recuerdos. Comprueba tu conexión e inténtalo de nuevo.')
+    console.error('[storage] getItems failed — code:', error.code, '| message:', error.message, '| details:', error.details, '| hint:', error.hint)
+    throw new Error(
+      `Error al cargar: ${error.message || error.code || 'desconocido'} ` +
+      `(código ${error.code ?? '?'}). ` +
+      `${error.hint ? 'Sugerencia: ' + error.hint : ''}`
+    )
   }
+
+  console.log('[storage] getItems OK — rows returned:', data.length)
   return data.map(fromRow)
 }
 
