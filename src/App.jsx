@@ -7,6 +7,7 @@ import { useAuth } from './AuthContext'
 import LoginScreen from './LoginScreen'
 import EntryForm from './EntryForm'
 import EntryCard from './EntryCard'
+import { useInactivityTimeout } from './useInactivityTimeout'
 
 export default function App() {
   const { session, signOut } = useAuth()
@@ -25,6 +26,7 @@ export default function App() {
 }
 
 function AppShell({ signOut }) {
+  const { minsLeft, resetTimer } = useInactivityTimeout(signOut)
   const [entries, setEntries]           = useState([])
   const [loading, setLoading]           = useState(true)
   const [error, setError]               = useState(null)
@@ -145,6 +147,19 @@ function AppShell({ signOut }) {
       </header>
 
       <main className="main">
+        {/* Inactivity warning */}
+        {minsLeft !== null && (
+          <div className="inactivity-banner" role="alert">
+            <span>
+              ⏰ Tu sesión cerrará por inactividad en{' '}
+              <strong>{minsLeft} minuto{minsLeft !== 1 ? 's' : ''}</strong>.
+            </span>
+            <button className="inactivity-stay-btn" onClick={resetTimer}>
+              Seguir conectada
+            </button>
+          </div>
+        )}
+
         {/* Migration banner */}
         {localCount > 0 && (
           <div className="migration-banner">

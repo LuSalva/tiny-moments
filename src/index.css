@@ -100,6 +100,39 @@ button { font-family: inherit; }
   margin-top: 4px;
 }
 
+/* ─── Inactivity warning banner ─────────────────────── */
+.inactivity-banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  background: #fff3e0;
+  border: 1px solid #ffcc80;
+  border-radius: 14px;
+  padding: 13px 16px;
+  margin-bottom: 14px;
+  font-size: 0.9rem;
+  color: #7a4800;
+}
+
+.inactivity-banner span { flex: 1; min-width: 0; }
+
+.inactivity-stay-btn {
+  white-space: nowrap;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 10px;
+  background: #ff9800;
+  color: white;
+  font-family: inherit;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.inactivity-stay-btn:hover { opacity: 0.88; }
+
 /* ─── Migration banner ───────────────────────────────── */
 .migration-banner {
   background: #fdf3c0;
