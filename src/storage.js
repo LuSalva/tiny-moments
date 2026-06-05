@@ -45,9 +45,10 @@ export async function getItems() {
 }
 
 export async function addItem(item) {
+  const { data: { user } } = await supabase.auth.getUser()
   const { data, error } = await supabase
     .from('entries')
-    .insert(toRow(item))
+    .insert({ ...toRow(item), user_id: user.id })
     .select()
     .single()
 
@@ -121,6 +122,7 @@ export async function migrateLocalToSupabase() {
   const local = getLocalItems()
   if (local.length === 0) return 0
 
+  const { data: { user } } = await supabase.auth.getUser()
   const rows = local.map(e => ({
     title:      e.title,
     type:       e.type,
@@ -131,6 +133,7 @@ export async function migrateLocalToSupabase() {
     people:     e.people    ?? [],
     favourite:  e.favourite ?? false,
     date_added: e.dateAdded || new Date().toISOString(),
+    user_id:    user.id,
   }))
 
   const { error } = await supabase.from('entries').insert(rows)
