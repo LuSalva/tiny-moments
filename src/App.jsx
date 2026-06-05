@@ -12,12 +12,10 @@ import { useInactivityTimeout } from './useInactivityTimeout'
 export default function App() {
   const { session, signOut } = useAuth()
 
-  // Show a neutral loading state while Supabase restores the session
   if (session === undefined) {
     return <div className="loading">Cargando… 💛</div>
   }
 
-  // Not logged in → show login screen
   if (!session) {
     return <LoginScreen />
   }
@@ -26,7 +24,11 @@ export default function App() {
 }
 
 function AppShell({ signOut }) {
+  const { session, userProfile } = useAuth()
   const { minsLeft, resetTimer } = useInactivityTimeout(signOut)
+
+  const currentUserId = session?.user?.id ?? null
+  const isAdmin       = userProfile?.role === 'admin'
   const [entries, setEntries]           = useState([])
   const [loading, setLoading]           = useState(true)
   const [error, setError]               = useState(null)
@@ -231,6 +233,8 @@ function AppShell({ signOut }) {
               <EntryCard
                 key={entry.id}
                 entry={entry}
+                currentUserId={currentUserId}
+                isAdmin={isAdmin}
                 onToggle={handleToggle}
                 onEdit={handleEdit}
                 onDelete={handleDelete}

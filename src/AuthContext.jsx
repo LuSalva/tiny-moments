@@ -5,17 +5,34 @@ const AuthContext = createContext(null)
 
 export function AuthProvider({ children }) {
   // undefined = still loading, null = logged out, object = logged in
-  const [session, setSession] = useState(undefined)
+  const [session,     setSession]     = useState(undefined)
+  // undefined = loading, null = no profile found, object = profile
+  const [userProfile, setUserProfile] = useState(undefined)
+
+  async function fetchProfile(userId) {
+    const { data } = await supabase
+      .from('profiles')
+      .select('id, display_name, role')
+      .eq('id', userId)
+      .single()
+    setUserProfile(data ?? null)
+  }
 
   useEffect(() => {
-    // Restore any existing session from localStorage on first load
     supabase.auth.getSession().then(({ data }) => {
-      setSession(data.session ?? null)
+      const s = data.session ?? null
+      setSession(s)
+      if (s) fetchProfile(s.user.id)
+      else   setUserProfile(null)
     })
 
-    // Keep session in sync for the lifetime of the app
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => setSession(session ?? null)
+      (_event, session) => {
+        const s = session ?? null
+        setSession(s)
+        if (s) fetchProfile(s.user.id)
+        else   setUserProfile(null)
+      }
     )
 
     return () => subscription.unsubscribe()
@@ -31,7 +48,7 @@ export function AuthProvider({ children }) {
   }
 
   return (
-    <AuthContext.Provider value={{ session, signIn, signOut }}>
+    <AuthContext.Provider value={{ session, userProfile, signIn, signOut }}>
       {children}
     </AuthContext.Provider>
   )

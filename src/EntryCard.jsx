@@ -29,7 +29,14 @@ function formatDate(dateStr) {
   return `${day}/${month}/${year}`
 }
 
-export default function EntryCard({ entry, onToggle, onEdit, onDelete }) {
+export default function EntryCard({
+  entry,
+  currentUserId,
+  isAdmin,
+  onToggle,
+  onEdit,
+  onDelete,
+}) {
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [expanded, setExpanded]           = useState(false)
 
@@ -37,6 +44,9 @@ export default function EntryCard({ entry, onToggle, onEdit, onDelete }) {
   const locationLabel =
     LOCATION_LABELS[entry.location] ||
     (entry.location ? `📍 ${entry.location}` : null)
+
+  // Owner or admin may edit, delete and toggle favourite
+  const canEdit = isAdmin || entry.userId === currentUserId
 
   function handleDelete(e) {
     e.stopPropagation()
@@ -60,34 +70,43 @@ export default function EntryCard({ entry, onToggle, onEdit, onDelete }) {
 
         <div className="card-title-area">
           <h3 className="card-title">{entry.title}</h3>
-          <span className="card-date">{formatDate(entry.date)}</span>
+          <div className="card-title-meta">
+            <span className="card-date">{formatDate(entry.date)}</span>
+            {entry.uploadedByName && (
+              <span className="card-author">{entry.uploadedByName}</span>
+            )}
+          </div>
         </div>
 
         <div className="card-actions" onClick={e => e.stopPropagation()}>
-          <button
-            className={`fav-btn${entry.favourite ? ' fav-btn--active' : ''}`}
-            onClick={() => onToggle(entry.id)}
-            title="Marcar como favorito"
-            aria-label="Favorito"
-          >
-            {entry.favourite ? '❤️' : '🤍'}
-          </button>
-          <button
-            className="edit-btn"
-            onClick={() => onEdit(entry)}
-            title="Editar"
-            aria-label="Editar"
-          >
-            ✏️
-          </button>
-          <button
-            className={`delete-btn${confirmDelete ? ' delete-btn--confirm' : ''}`}
-            onClick={handleDelete}
-            title={confirmDelete ? 'Pulsa de nuevo para confirmar' : 'Eliminar'}
-            aria-label="Eliminar"
-          >
-            {confirmDelete ? '¿Borrar?' : '🗑️'}
-          </button>
+          {canEdit && (
+            <>
+              <button
+                className={`fav-btn${entry.favourite ? ' fav-btn--active' : ''}`}
+                onClick={() => onToggle(entry.id)}
+                title="Marcar como favorito"
+                aria-label="Favorito"
+              >
+                {entry.favourite ? '❤️' : '🤍'}
+              </button>
+              <button
+                className="edit-btn"
+                onClick={() => onEdit(entry)}
+                title="Editar"
+                aria-label="Editar"
+              >
+                ✏️
+              </button>
+              <button
+                className={`delete-btn${confirmDelete ? ' delete-btn--confirm' : ''}`}
+                onClick={handleDelete}
+                title={confirmDelete ? 'Pulsa de nuevo para confirmar' : 'Eliminar'}
+                aria-label="Eliminar"
+              >
+                {confirmDelete ? '¿Borrar?' : '🗑️'}
+              </button>
+            </>
+          )}
         </div>
 
         <span className="card-chevron">{expanded ? '▲' : '▼'}</span>

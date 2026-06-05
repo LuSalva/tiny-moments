@@ -1,18 +1,21 @@
 import { supabase } from './supabase'
 
 // Map a Supabase row (snake_case) → app entry (camelCase)
-function fromRow(row) {
+// nameMap: { [user_id]: display_name } — optional, built in getItems
+function fromRow(row, nameMap = {}) {
   return {
-    id:        row.id,
-    title:     row.title,
-    type:      row.type,
-    note:      row.note      ?? '',
-    date:      row.date,
-    photo:     row.photo     ?? null,
-    location:  row.location  ?? '',
-    people:    row.people    ?? [],
-    favourite: row.favourite ?? false,
-    dateAdded: row.date_added,
+    id:             row.id,
+    userId:         row.user_id,
+    title:          row.title,
+    type:           row.type,
+    note:           row.note      ?? '',
+    date:           row.date,
+    photo:          row.photo     ?? null,
+    location:       row.location  ?? '',
+    people:         row.people    ?? [],
+    favourite:      row.favourite ?? false,
+    dateAdded:      row.date_added,
+    uploadedByName: nameMap[row.user_id] ?? null,
   }
 }
 
@@ -31,15 +34,24 @@ function toRow(item) {
 }
 
 export async function getItems() {
-  const { data, error } = await supabase
-    .from('entries')
-    .select('*')
+  const [
+    { data: rows,     error: entriesError },
+    { data: profiles, error: profilesError },
+  ] = await Promise.all([
+    supabase.from('entries').select('*'),
+    supabase.from('profiles').select('id, display_name'),
+  ])
 
-  if (error) {
-    console.error('[storage] getItems failed:', error)
+  if (entriesError) {
+    console.error('[storage] getItems entries error:', entriesError)
     throw new Error('No se pudieron cargar los recuerdos. Comprueba tu conexión e inténtalo de nuevo.')
   }
-  return data.map(fromRow)
+  if (profilesError) {
+    console.error('[storage] getItems profiles error (non-fatal):', profilesError)
+  }
+
+  const nameMap = Object.fromEntries((profiles ?? []).map(p => [p.id, p.display_name]))
+  return rows.map(row => fromRow(row, nameMap))
 }
 
 export async function addItem(item) {
