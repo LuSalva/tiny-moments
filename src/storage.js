@@ -37,9 +37,7 @@ export async function getItems() {
 
   if (error) {
     console.error('[storage] getItems failed:', error)
-    throw new Error(
-      `Error al cargar: ${error.message} (código ${error.code ?? '?'})`
-    )
+    throw new Error('No se pudieron cargar los recuerdos. Comprueba tu conexión e inténtalo de nuevo.')
   }
   return data.map(fromRow)
 }
