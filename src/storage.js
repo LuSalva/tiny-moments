@@ -46,12 +46,17 @@ export async function getItems() {
     console.error('[storage] getItems entries error:', entriesError)
     throw new Error('No se pudieron cargar los recuerdos. Comprueba tu conexión e inténtalo de nuevo.')
   }
-  if (profilesError) {
-    console.error('[storage] getItems profiles error (non-fatal):', profilesError)
-  }
+
+  console.log('[storage] profiles query — data:', profiles, '| error:', profilesError)
 
   const nameMap = Object.fromEntries((profiles ?? []).map(p => [p.id, p.display_name]))
-  return rows.map(row => fromRow(row, nameMap))
+  console.log('[storage] nameMap:', nameMap)
+
+  const result = rows.map(row => fromRow(row, nameMap))
+  if (result.length > 0) {
+    console.log('[storage] first entry:', result[0])
+  }
+  return result
 }
 
 export async function addItem(item) {
