@@ -45,10 +45,20 @@ export async function getItems() {
 }
 
 export async function addItem(item) {
-  const { data: { user } } = await supabase.auth.getUser()
+  const { data: { session } } = await supabase.auth.getSession()
+  const userId = session?.user?.id
+
+  if (!userId) {
+    console.error('[storage] addItem: no authenticated user found in session')
+    throw new Error('No hay sesión activa. Por favor, inicia sesión de nuevo.')
+  }
+
+  const row = { ...toRow(item), user_id: userId }
+  console.log('[storage] addItem inserting:', row)
+
   const { data, error } = await supabase
     .from('entries')
-    .insert({ ...toRow(item), user_id: user.id })
+    .insert(row)
     .select()
     .single()
 
@@ -122,7 +132,10 @@ export async function migrateLocalToSupabase() {
   const local = getLocalItems()
   if (local.length === 0) return 0
 
-  const { data: { user } } = await supabase.auth.getUser()
+  const { data: { session } } = await supabase.auth.getSession()
+  const userId = session?.user?.id
+  if (!userId) throw new Error('No hay sesión activa. Por favor, inicia sesión de nuevo.')
+
   const rows = local.map(e => ({
     title:      e.title,
     type:       e.type,
@@ -133,7 +146,7 @@ export async function migrateLocalToSupabase() {
     people:     e.people    ?? [],
     favourite:  e.favourite ?? false,
     date_added: e.dateAdded || new Date().toISOString(),
-    user_id:    user.id,
+    user_id:    userId,
   }))
 
   const { error } = await supabase.from('entries').insert(rows)
