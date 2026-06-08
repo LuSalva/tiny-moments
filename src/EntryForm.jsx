@@ -206,6 +206,7 @@ export default function EntryForm({ onSave, onCancel, initialEntry }) {
           <input
             type="file"
             accept="image/*"
+            capture="environment"
             onChange={handlePhotoChange}
             style={{ display: 'none' }}
           />
