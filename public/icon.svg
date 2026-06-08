@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Pink background with rounded corners -->
+  <rect width="512" height="512" rx="96" fill="#f9c6d0"/>
+  <!-- Rainbow arcs, centred lower half -->
+  <path d="M 60 340 A 196 196 0 0 1 452 340" fill="none" stroke="#e53935" stroke-width="36" stroke-linecap="round"/>
+  <path d="M 96 340 A 160 160 0 0 1 416 340" fill="none" stroke="#ff7043" stroke-width="36" stroke-linecap="round"/>
+  <path d="M 132 340 A 124 124 0 0 1 380 340" fill="none" stroke="#fdd835" stroke-width="36" stroke-linecap="round"/>
+  <path d="M 168 340 A  88  88 0 0 1 344 340" fill="none" stroke="#43a047" stroke-width="36" stroke-linecap="round"/>
+  <path d="M 204 340 A  52  52 0 0 1 308 340" fill="none" stroke="#1e88e5" stroke-width="36" stroke-linecap="round"/>
+</svg>
