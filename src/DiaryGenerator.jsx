@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState } from 'react'
 import { CoverPage, PhotoPage, TextPage, PAGE_W, PAGE_H } from './DiaryPages'
 import { buildPdf } from './pdfUtils'
 
@@ -65,8 +65,6 @@ export default function DiaryGenerator({ entries }) {
   const [progress,       setProgress]       = useState(0)
   const [history,        setHistory]        = useState(loadHistory)
 
-  const pageRefs = useRef([])
-
   // ── Filtered entries ──────────────────────────────────────────────────────
   const filtered = entries.filter(e => {
     if (dateFrom && e.date < dateFrom) return false
@@ -86,7 +84,6 @@ export default function DiaryGenerator({ entries }) {
 
   // ── Actions ───────────────────────────────────────────────────────────────
   function handlePreview() {
-    pageRefs.current = []
     setPages(composePages(filtered))
   }
 
@@ -94,8 +91,7 @@ export default function DiaryGenerator({ entries }) {
     setGenerating(true)
     setProgress(0)
     try {
-      const els = pageRefs.current.filter(Boolean)
-      const pdf = await buildPdf(els, setProgress)
+      const pdf = await buildPdf(pages, setProgress)
       const filename = `diario-ella-${new Date().toISOString().slice(0, 10)}.pdf`
       pdf.save(filename)
     } catch (err) {
@@ -131,7 +127,6 @@ export default function DiaryGenerator({ entries }) {
       if (h.dateTo   && e.date > h.dateTo)   return false
       return h.types.includes(e.type)
     })
-    pageRefs.current = []
     setPages(composePages(reFiltered))
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
@@ -265,18 +260,7 @@ export default function DiaryGenerator({ entries }) {
         </section>
       )}
 
-      {/* ── Hidden full-size pages for html2canvas ────────────────── */}
-      {pages.length > 0 && (
-        <div style={{ position: 'fixed', top: 0, left: '-9999px',
-          width: PAGE_W, pointerEvents: 'none', zIndex: -1 }}>
-          {pages.map((page, i) => (
-            <div key={i} ref={el => { pageRefs.current[i] = el }}
-              style={{ width: PAGE_W, height: PAGE_H }}>
-              <PageRenderer page={page} />
-            </div>
-          ))}
-        </div>
-      )}
+      {/* pdf is generated via jsPDF drawing API — no hidden DOM needed */}
     </div>
   )
 }

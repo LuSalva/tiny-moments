@@ -223,7 +223,7 @@ function Polaroid({ entry, t, l, rot, pw, ph, colorIdx }) {
 
       {/* Photo */}
       <img src={entry.photo}
-        style={{ width: pw, height: ph, objectFit: 'cover', display: 'block' }} />
+        style={{ width: pw, height: ph, objectFit: 'contain', display: 'block', background: '#f8f8f8' }} />
 
       {/* Caption */}
       <div style={{ paddingTop: 9, textAlign: 'center' }}>
