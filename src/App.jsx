@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, lazy, Suspense } from 'react'
 import {
   getItems, addItem, updateItem, toggleItem, deleteItem,
   getLocalItems, migrateLocalToSupabase,
@@ -8,6 +8,7 @@ import LoginScreen from './LoginScreen'
 import EntryForm from './EntryForm'
 import EntryCard from './EntryCard'
 import { useInactivityTimeout } from './useInactivityTimeout'
+const DiaryGenerator = lazy(() => import('./DiaryGenerator'))
 
 export default function App() {
   const { session, signOut } = useAuth()
@@ -26,6 +27,7 @@ export default function App() {
 function AppShell({ signOut }) {
   const { session, userProfile } = useAuth()
   const { minsLeft, resetTimer } = useInactivityTimeout(signOut)
+  const [activeTab, setActiveTab] = useState('diary')
 
   const currentUserId = session?.user?.id ?? null
   const isAdmin       = userProfile?.role === 'admin'
@@ -187,60 +189,84 @@ function AppShell({ signOut }) {
           </div>
         )}
 
-        <div className="search-bar">
-          <input
-            type="text"
-            placeholder="🔍 Buscar por persona..."
-            value={searchPerson}
-            onChange={e => setSearchPerson(e.target.value)}
-            aria-label="Buscar por persona"
-          />
-          {searchPerson && (
-            <button
-              className="clear-search"
-              onClick={() => setSearchPerson('')}
-              aria-label="Limpiar búsqueda"
-            >
-              ✕
-            </button>
-          )}
+        {/* Tab navigation */}
+        <div className="tab-nav">
+          <button
+            className={`tab-btn${activeTab === 'diary' ? ' tab-btn--active' : ''}`}
+            onClick={() => setActiveTab('diary')}
+          >
+            📔 Recuerdos
+          </button>
+          <button
+            className={`tab-btn${activeTab === 'pdf' ? ' tab-btn--active' : ''}`}
+            onClick={() => setActiveTab('pdf')}
+          >
+            📄 Generar diario
+          </button>
         </div>
 
-        <button className="add-button" onClick={() => setShowForm(true)}>
-          + Nuevo recuerdo
-        </button>
-
-        {loading ? (
-          <div className="loading">Cargando recuerdos… 💛</div>
-        ) : filtered.length === 0 ? (
-          <div className="empty-state">
-            <div className="empty-emoji">🌈</div>
-            {searchPerson ? (
-              <>
-                <h2>Sin resultados</h2>
-                <p>No hay recuerdos con <strong>{searchPerson}</strong>.</p>
-              </>
-            ) : (
-              <>
-                <h2>¡Aún no hay recuerdos!</h2>
-                <p>Empieza a capturar los momentos especiales de tu hija 💕</p>
-              </>
-            )}
-          </div>
+        {activeTab === 'pdf' ? (
+          <Suspense fallback={<div className="loading">Cargando generador… 💛</div>}>
+            <DiaryGenerator entries={entries} />
+          </Suspense>
         ) : (
-          <div className="entries-list">
-            {filtered.map(entry => (
-              <EntryCard
-                key={entry.id}
-                entry={entry}
-                currentUserId={currentUserId}
-                isAdmin={isAdmin}
-                onToggle={handleToggle}
-                onEdit={handleEdit}
-                onDelete={handleDelete}
+          <>
+            <div className="search-bar">
+              <input
+                type="text"
+                placeholder="🔍 Buscar por persona..."
+                value={searchPerson}
+                onChange={e => setSearchPerson(e.target.value)}
+                aria-label="Buscar por persona"
               />
-            ))}
-          </div>
+              {searchPerson && (
+                <button
+                  className="clear-search"
+                  onClick={() => setSearchPerson('')}
+                  aria-label="Limpiar búsqueda"
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+
+            <button className="add-button" onClick={() => setShowForm(true)}>
+              + Nuevo recuerdo
+            </button>
+
+            {loading ? (
+              <div className="loading">Cargando recuerdos… 💛</div>
+            ) : filtered.length === 0 ? (
+              <div className="empty-state">
+                <div className="empty-emoji">🌈</div>
+                {searchPerson ? (
+                  <>
+                    <h2>Sin resultados</h2>
+                    <p>No hay recuerdos con <strong>{searchPerson}</strong>.</p>
+                  </>
+                ) : (
+                  <>
+                    <h2>¡Aún no hay recuerdos!</h2>
+                    <p>Empieza a capturar los momentos especiales de tu hija 💕</p>
+                  </>
+                )}
+              </div>
+            ) : (
+              <div className="entries-list">
+                {filtered.map(entry => (
+                  <EntryCard
+                    key={entry.id}
+                    entry={entry}
+                    currentUserId={currentUserId}
+                    isAdmin={isAdmin}
+                    onToggle={handleToggle}
+                    onEdit={handleEdit}
+                    onDelete={handleDelete}
+                  />
+                ))}
+              </div>
+            )}
+          </>
         )}
       </main>
     </div>
