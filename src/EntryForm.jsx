@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 
 const TYPES = [
   { value: 'frase',    emoji: '💬', label: 'Frase' },
@@ -66,9 +66,26 @@ export default function EntryForm({ onSave, onCancel, initialEntry }) {
   const [errors, setErrors]             = useState({})
   const [saveError, setSaveError]       = useState(null)
 
+  const cameraRef  = useRef(null)
+  const galleryRef = useRef(null)
+
+  // Photo upload is only relevant for these types
+  const showPhotoUpload = type === 'foto' || type === 'creacion'
+
+  function handleTypeChange(newType) {
+    setType(newType)
+    // Clear photo when switching to a type that doesn't support it
+    if (newType !== 'foto' && newType !== 'creacion') {
+      setPhoto(null)
+      setPhotoPreview(null)
+    }
+  }
+
   async function handlePhotoChange(e) {
     const file = e.target.files[0]
     if (!file) return
+    // Reset input so the same file can be re-selected after clearing
+    e.target.value = ''
     const compressed = await compressImage(file)
     setPhoto(compressed)
     setPhotoPreview(compressed)
@@ -155,7 +172,7 @@ export default function EntryForm({ onSave, onCancel, initialEntry }) {
               key={t.value}
               type="button"
               className={`type-btn${type === t.value ? ' type-btn--active' : ''}`}
-              onClick={() => setType(t.value)}
+              onClick={() => handleTypeChange(t.value)}
             >
               <span className="type-emoji">{t.emoji}</span>
               <span className="type-label">{t.label}</span>
@@ -189,29 +206,63 @@ export default function EntryForm({ onSave, onCancel, initialEntry }) {
         {errors.date && <span className="error-text">{errors.date}</span>}
       </div>
 
-      {/* Photo */}
-      <div className="field">
-        <label>Foto o imagen</label>
-        <label className="photo-upload">
-          {photoPreview ? (
-            <div className="photo-preview-container">
+      {/* Photo — only shown for 📸 Foto and 🎨 Creación */}
+      {showPhotoUpload && (
+        <div className="field">
+          <label>Foto o imagen</label>
+
+          {/* Preview */}
+          {photoPreview && (
+            <div className="photo-preview-container" style={{ marginBottom: 10 }}>
               <img src={photoPreview} alt="Vista previa" className="photo-preview" />
-              <span className="photo-change">📷 Cambiar foto</span>
-            </div>
-          ) : (
-            <div className="photo-placeholder">
-              <span>📷 Subir foto o dibujo</span>
             </div>
           )}
+
+          {/* Two upload buttons */}
+          <div className="photo-upload-btns">
+            <button
+              type="button"
+              className="photo-upload-btn"
+              onClick={() => cameraRef.current?.click()}
+            >
+              📷 Sacar foto
+            </button>
+            <button
+              type="button"
+              className="photo-upload-btn"
+              onClick={() => galleryRef.current?.click()}
+            >
+              🖼️ Elegir de galería
+            </button>
+            {photoPreview && (
+              <button
+                type="button"
+                className="photo-upload-btn photo-upload-btn--remove"
+                onClick={() => { setPhoto(null); setPhotoPreview(null) }}
+              >
+                🗑️ Quitar foto
+              </button>
+            )}
+          </div>
+
+          {/* Hidden inputs — camera and gallery */}
           <input
+            ref={cameraRef}
             type="file"
             accept="image/*"
             capture="environment"
             onChange={handlePhotoChange}
             style={{ display: 'none' }}
           />
-        </label>
-      </div>
+          <input
+            ref={galleryRef}
+            type="file"
+            accept="image/*"
+            onChange={handlePhotoChange}
+            style={{ display: 'none' }}
+          />
+        </div>
+      )}
 
       {/* Location */}
       <div className="field">

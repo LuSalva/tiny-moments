@@ -788,7 +788,40 @@ button { font-family: inherit; }
   padding: 0;
 }
 
-/* Photo upload */
+/* Photo upload — two buttons */
+.photo-upload-btns {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.photo-upload-btn {
+  flex: 1;
+  min-width: 120px;
+  padding: 12px 10px;
+  border: 2px dashed #f9c6d0;
+  border-radius: 13px;
+  background: #fff8fa;
+  font-family: inherit;
+  font-size: 0.9rem;
+  color: #5a4d66;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
+  text-align: center;
+}
+
+.photo-upload-btn:hover { background: #ffe8ee; border-color: #e8a0b0; }
+
+.photo-upload-btn--remove {
+  border-color: #e8d0d0;
+  background: #fff5f5;
+  color: #b05050;
+  flex: none;
+}
+
+.photo-upload-btn--remove:hover { background: #ffe0e0; border-color: #c08080; }
+
+/* Legacy label-based upload (kept for compatibility) */
 .photo-upload { cursor: pointer; display: block; }
 
 .photo-placeholder {

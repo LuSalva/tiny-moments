@@ -1,164 +1,88 @@
 /**
  * PDF generation using jsPDF's drawing API directly.
- * No html2canvas — every element is drawn programmatically so the output
- * is pixel-perfect and independent of CSS/browser rendering.
+ *
+ * Layout: single-column, entries stacked vertically.
+ *   Cover block  = 1/4 page  (74.25 mm)
+ *   Photo block  = 1/4 page  (74.25 mm)
+ *   Text block   = 1/6 page  (49.50 mm)
+ *
+ * Blocks are packed greedily — no wasted whitespace.
  */
 import jsPDF from 'jspdf'
 
-// ─── Unit conversion ──────────────────────────────────────────────────────────
-// Our design coordinate space: 794 × 1123 px (A4 at 96 dpi)
-// jsPDF coordinate space:      210 × 297 mm  (A4)
-const MM_PER_PX = 210 / 794
-const W = 210   // page width  mm
-const H = 297   // page height mm
-function px(v) { return v * MM_PER_PX }  // px → mm
+// ─── Page constants ───────────────────────────────────────────────────────────
+const W  = 210          // A4 width  (mm)
+const H  = 297          // A4 height (mm)
+const BH_LARGE = H / 4  // 74.25 mm  — cover + photo entries
+const BH_SMALL = H / 6  // 49.50 mm  — text-only entries
+const PAD = 8           // horizontal page margin (mm)
 
-// ─── Color helpers ────────────────────────────────────────────────────────────
-function hexRGB(hex) {
-  return [parseInt(hex.slice(1,3),16), parseInt(hex.slice(3,5),16), parseInt(hex.slice(5,7),16)]
-}
-// Washi colours pre-blended onto white (rgba at 0.78 opacity)
-const WASHI = [
-  [197,225,222],  // mint
-  [255,200,208],  // pink
-  [255,229,118],  // yellow
-  [220,213,244],  // lavender
-  [255,200,171],  // coral
-  [167,240,189],  // sage
+// ─── Color palettes ───────────────────────────────────────────────────────────
+const RAINBOW = [
+  [229,57,53], [255,112,67], [253,216,53],
+  [67,160,71], [30,136,229], [123,31,162],
 ]
 
-// ─── Drawing primitives ───────────────────────────────────────────────────────
-function fillPage(pdf, hexColor) {
-  pdf.setFillColor(...hexRGB(hexColor))
-  pdf.rect(0, 0, W, H, 'F')
+// Pastel accent per entry type (pre-blended on white at ~0.8 opacity)
+const TYPE_ACCENT = {
+  frase:    [255, 243, 150],
+  creacion: [183, 232, 222],
+  foto:     [255, 211, 217],
+  hito:     [221, 211, 247],
+  cancion:  [255, 240, 160],
+  recuerdo: [255, 211, 217],
 }
+const DEFAULT_ACCENT = [240, 236, 250]
 
-function fillRect(pdf, xPx, yPx, wPx, hPx, color) {
-  if (Array.isArray(color)) pdf.setFillColor(...color)
-  else pdf.setFillColor(...hexRGB(color))
-  pdf.rect(px(xPx), px(yPx), px(wPx), px(hPx), 'F')
-}
-
-function strokeRect(pdf, xPx, yPx, wPx, hPx, color, lw = 0.3) {
-  if (Array.isArray(color)) pdf.setDrawColor(...color)
-  else pdf.setDrawColor(...hexRGB(color))
-  pdf.setLineWidth(lw)
-  pdf.rect(px(xPx), px(yPx), px(wPx), px(hPx), 'D')
-}
-
-function putText(pdf, text, xMm, yMm, {
-  font = 'helvetica', style = 'normal', size = 10,
-  color = '#333333', align = 'left', maxWidth,
-} = {}) {
-  if (!text) return
-  pdf.setFont(font, style)
-  pdf.setFontSize(size)
-  pdf.setTextColor(...hexRGB(color))
-  const opts = {}
-  if (align !== 'left') opts.align = align
-  if (maxWidth) opts.maxWidth = maxWidth
-  pdf.text(String(text), xMm, yMm, opts)
-}
-
-// Horizontal ruled line
-function hLine(pdf, xStartPx, xEndPx, yPx, color, lw = 0.2) {
-  if (Array.isArray(color)) pdf.setDrawColor(...color)
-  else pdf.setDrawColor(...hexRGB(color))
-  pdf.setLineWidth(lw)
-  pdf.line(px(xStartPx), px(yPx), px(xEndPx), px(yPx))
-}
-
-// Vertical line
-function vLine(pdf, xPx, yStartPx, yEndPx, color, lw = 0.2) {
-  if (Array.isArray(color)) pdf.setDrawColor(...color)
-  else pdf.setDrawColor(...hexRGB(color))
-  pdf.setLineWidth(lw)
-  pdf.line(px(xPx), px(yStartPx), px(xPx), px(yEndPx))
-}
-
-// Washi tape strip with subtle vertical stripe texture
-function drawWashi(pdf, xPx, yPx, wPx, hPx, colorIdx) {
-  const [r, g, b] = WASHI[colorIdx % WASHI.length]
-  const xMm = px(xPx), yMm = px(yPx), wMm = px(wPx), hMm = px(hPx)
-  pdf.setFillColor(r, g, b)
-  pdf.rect(xMm, yMm, wMm, hMm, 'F')
-  // Vertical stripe texture
-  pdf.setDrawColor(255, 255, 255)
-  pdf.setLineWidth(0.12)
-  for (let dx = px(10); dx < wMm; dx += px(11)) {
-    pdf.line(xMm + dx, yMm, xMm + dx, yMm + hMm)
-  }
-}
-
-// Corrugated cardboard circle
-function drawCardboardDot(pdf, xPx, yPx, sizePx) {
-  const r  = px(sizePx / 2)
-  const cx = px(xPx) + r
-  const cy = px(yPx) + r
-  pdf.setFillColor(196, 168, 110)
-  pdf.circle(cx, cy, r, 'F')
-  // Horizontal texture lines
-  pdf.setDrawColor(162, 130, 72)
-  pdf.setLineWidth(0.22)
-  const gap = px(6)
-  for (let dy = -r + gap / 2; dy < r; dy += gap) {
-    const chord = Math.sqrt(Math.max(0, r * r - dy * dy))
-    if (chord > 0.05) pdf.line(cx - chord, cy + dy, cx + chord, cy + dy)
-  }
-}
-
-// ─── Rainbow (quadratic bezier approximated with line segments) ───────────────
-function drawRainbow(pdf) {
-  const CX = W / 2    // 105 mm, horizontal centre
-  const BY = H - 12   // 285 mm, base of arcs near bottom
-
-  const ARCS = [
-    { c: [229, 57,  53],  r: px(318), sw: px(32), wx: px( 14), wy: px(-18) },
-    { c: [255,112,  67],  r: px(280), sw: px(30), wx: px(-10), wy: px( 12) },
-    { c: [253,216,  53],  r: px(242), sw: px(30), wx: px( 12), wy: px( -8) },
-    { c: [ 67,160,  71],  r: px(204), sw: px(30), wx: px(-14), wy: px( 14) },
-    { c: [ 30,136, 229],  r: px(166), sw: px(30), wx: px( 10), wy: px(-10) },
-    { c: [123, 31, 162],  r: px(128), sw: px(28), wx: px(-12), wy: px(  8) },
-  ]
-
-  ARCS.forEach(({ c, r, sw, wx, wy }) => {
-    const x1 = CX - r, x2 = CX + r
-    const cx = CX + wx, cy = BY - r + wy
-    pdf.setDrawColor(...c)
-    pdf.setLineWidth(sw)
-    // 80-segment polyline approximation of the quadratic bezier
-    let px0 = x1, py0 = BY
-    const N = 80
-    for (let i = 1; i <= N; i++) {
-      const t = i / N, mt = 1 - t
-      const qx = mt * mt * x1 + 2 * mt * t * cx + t * t * x2
-      const qy = mt * mt * BY + 2 * mt * t * cy + t * t * BY
-      pdf.line(px0, py0, qx, qy)
-      px0 = qx; py0 = qy
-    }
-  })
+const TYPE_LABEL = {
+  frase:'Frase', creacion:'Creacion', foto:'Foto',
+  hito:'Hito',   cancion:'Cancion',  recuerdo:'Recuerdo',
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
+function hex(h) {
+  return [parseInt(h.slice(1,3),16), parseInt(h.slice(3,5),16), parseInt(h.slice(5,7),16)]
+}
+
 function fmtDate(d) {
   if (!d) return ''
   const [y, m, day] = d.split('-')
   return `${day}/${m}/${y}`
 }
 
-function locText(loc) {
-  if (!loc) return null
-  if (loc === 'home')      return 'Home'
-  if (loc === 'veldhoven') return 'Veldhoven'
-  return loc
+function locText(l) {
+  if (!l) return null
+  if (l === 'home')      return 'Home'
+  if (l === 'veldhoven') return 'Veldhoven'
+  return l
 }
 
-const TYPE_SHORT = {
-  frase:'Frase', creacion:'Creacion', foto:'Foto',
-  hito:'Hito',   cancion:'Cancion',  recuerdo:'Recuerdo',
+/** Write text with full options. */
+function txt(pdf, text, xMm, yMm, {
+  font   = 'helvetica',
+  style  = 'normal',
+  size   = 9,
+  color  = '#444444',
+  align  = 'left',
+  maxW,
+} = {}) {
+  if (!text) return
+  pdf.setFont(font, style)
+  pdf.setFontSize(size)
+  pdf.setTextColor(...hex(color))
+  const o = {}
+  if (align !== 'left') o.align = align
+  if (maxW) o.maxWidth = maxW
+  pdf.text(String(text), xMm, yMm, o)
 }
 
-// Load an image and return { w, h, data } — resolves aspect ratio for contain logic
+/** Return first N lines of text wrapped to maxW mm. */
+function wrapLines(pdf, text, maxW, maxLines = 99) {
+  pdf.setFontSize(9)
+  return pdf.splitTextToSize(String(text), maxW).slice(0, maxLines)
+}
+
+/** Decode image dimensions without loading DOM. */
 function loadImage(dataUrl) {
   return new Promise(resolve => {
     const img = new Image()
@@ -168,249 +92,259 @@ function loadImage(dataUrl) {
   })
 }
 
-// Fit dimensions preserving aspect ratio (object-fit: contain)
-function containFit(imgW, imgH, boxW, boxH) {
-  const scale = Math.min(boxW / imgW, boxH / imgH)
-  return { w: imgW * scale, h: imgH * scale }
+/** Compute contain-fit dimensions (like object-fit: contain). */
+function fitContain(imgW, imgH, boxW, boxH) {
+  const s = Math.min(boxW / imgW, boxH / imgH)
+  return { w: imgW * s, h: imgH * s }
 }
 
-// Clip a string to approximately fit maxWidth mm at given font size
-function clipText(pdf, text, maxWidthMm) {
-  const lines = pdf.splitTextToSize(text, maxWidthMm)
-  return lines[0] + (lines.length > 1 ? '…' : '')
+// ─── Block drawing ────────────────────────────────────────────────────────────
+
+/**
+ * Left accent bar — rainbow for cover, solid colour for entries.
+ */
+function drawAccentBar(pdf, yMm, height, rainbow = false, typeKey) {
+  const BAR_W = 4  // mm
+  if (rainbow) {
+    const segH = height / RAINBOW.length
+    RAINBOW.forEach(([r,g,b], i) => {
+      pdf.setFillColor(r, g, b)
+      pdf.rect(0, yMm + i * segH, BAR_W, segH, 'F')
+    })
+  } else {
+    const [r,g,b] = TYPE_ACCENT[typeKey] || DEFAULT_ACCENT
+    pdf.setFillColor(r, g, b)
+    pdf.rect(0, yMm, BAR_W, height, 'F')
+    // Subtle darker stripe at bar edge
+    pdf.setFillColor(r - 20, g - 20, b - 20)
+    pdf.rect(BAR_W - 0.5, yMm, 0.5, height, 'F')
+  }
 }
 
-// ─── Page drawers ─────────────────────────────────────────────────────────────
+/** Thin separator line at the bottom of a block. */
+function drawSep(pdf, yMm) {
+  pdf.setDrawColor(218, 212, 204)
+  pdf.setLineWidth(0.18)
+  pdf.line(PAD, yMm, W - PAD, yMm)
+}
 
-function drawCover(pdf, entries) {
-  // Background
-  fillPage(pdf, '#fdfaf5')
+/** Cover block — 1/4 page. */
+function drawCoverBlock(pdf, yMm, entries) {
+  const bh = BH_LARGE
 
-  // Cardboard dots
-  drawCardboardDot(pdf, 28, 44, 96)
-  drawCardboardDot(pdf, 680, 200, 68)
-  drawCardboardDot(pdf, 655, 900, 84)
-  drawCardboardDot(pdf, 40, 820, 52)
+  // Background — slightly warmer cream
+  pdf.setFillColor(249, 244, 234)
+  pdf.rect(0, yMm, W, bh, 'F')
 
-  // Washi tape — top-left and top-right
-  drawWashi(pdf, 0,   18, 180, 22, 0)   // mint
-  drawWashi(pdf, 614, 18, 180, 22, 1)   // pink (794 - 180 = 614)
+  drawAccentBar(pdf, yMm, bh, /* rainbow */ true)
 
-  // Title
-  putText(pdf, 'El diario', W / 2, 62,  { style:'bold', size:52, color:'#2c2520', align:'center' })
-  putText(pdf, 'de Ella',   W / 2, 83,  { style:'bold', size:52, color:'#2c2520', align:'center' })
-
-  // Date range + count
+  // Date range
   const dates = entries.map(e => e.date).filter(Boolean).sort()
   const from  = dates[0]     ? fmtDate(dates[0])     : ''
   const to    = dates.at(-1) ? fmtDate(dates.at(-1)) : ''
   const range = !from ? '' : from === to ? from : `${from} – ${to}`
-  if (range) putText(pdf, range, W / 2, 99, { style:'italic', size:13, color:'#8a7a6a', align:'center' })
-  putText(pdf, `${entries.length} recuerdos`, W / 2, 110, { size:10, color:'#b8a898', align:'center' })
 
-  // Rainbow
-  drawRainbow(pdf)
-}
+  const tx = 10   // text start x (right of bar + gap)
 
-// Photo page layout configs  [top, left, photoW, photoH] in px
-const PHOTO_CFG = {
-  1: [{ t:290, l:182, pw:390, ph:305 }],
-  2: [{ t: 60, l: 40, pw:340, ph:270 }, { t:560, l:395, pw:340, ph:270 }],
-  3: [{ t: 40, l: 28, pw:310, ph:245 }, { t: 50, l:440, pw:310, ph:245 }, { t:590, l:228, pw:310, ph:245 }],
-  4: [{ t: 48, l: 22, pw:278, ph:218 }, { t: 34, l:448, pw:278, ph:218 },
-      { t:580, l: 38, pw:278, ph:218 }, { t:562, l:440, pw:278, ph:218 }],
-}
+  // Title — two lines for visual weight
+  txt(pdf, 'El diario de Ella', tx, yMm + 20,
+    { style:'bold', size:24, color:'#2c2520' })
 
-async function drawPhotoPage(pdf, entries, pageNum) {
-  fillPage(pdf, '#ffffff')
-
-  const n    = Math.min(entries.length, 4)
-  const cfgs = PHOTO_CFG[n] || PHOTO_CFG[4]
-
-  for (let i = 0; i < n; i++) {
-    const e   = entries[i]
-    const cfg = cfgs[i]
-    await drawPolaroid(pdf, e, cfg, (pageNum + i) % WASHI.length)
+  if (range) {
+    txt(pdf, range, tx, yMm + 33,
+      { style:'italic', size:11, color:'#8a7a6a' })
   }
+  txt(pdf, `${entries.length} recuerdos`, tx, yMm + 43,
+    { size:8.5, color:'#b8a898' })
+
+  // Mini washi decoration — top-right corner
+  pdf.setFillColor(197, 225, 222)  // mint
+  pdf.rect(W - 36, yMm + 4, 36, 8, 'F')
+  pdf.setFillColor(255, 200, 208)  // pink
+  pdf.rect(W - 36, yMm + 12, 36, 8, 'F')
+  pdf.setFillColor(255, 229, 118)  // yellow
+  pdf.rect(W - 36, yMm + 20, 36, 8, 'F')
+
+  // Subtitle below washi
+  txt(pdf, 'un diario de momentos\nespeciales 💕', W - PAD, yMm + 42,
+    { style:'italic', size:7, color:'#c8b8a8', align:'right' })
+
+  drawSep(pdf, yMm + bh)
 }
 
-async function drawPolaroid(pdf, entry, { t: tPx, l: lPx, pw: pwPx, ph: phPx }, colorIdx) {
-  const PAD_S = 16, PAD_T = 16, PAD_B = 46
-  const cardWPx = pwPx + PAD_S * 2
-  const cardHPx = phPx + PAD_T + PAD_B
+/** Photo entry block — 1/4 page. */
+async function drawPhotoBlock(pdf, entry, yMm) {
+  const bh = BH_LARGE  // 74.25 mm
 
-  const xMm = px(lPx), yMm = px(tPx)
-  const cWMm = px(cardWPx), cHMm = px(cardHPx)
-  const pWMm = px(pwPx),    pHMm = px(phPx)
-
-  // Shadow
-  pdf.setFillColor(215, 207, 197)
-  pdf.rect(xMm + 1.2, yMm + 1.8, cWMm, cHMm, 'F')
-
-  // White card
+  // White background
   pdf.setFillColor(255, 255, 255)
-  pdf.rect(xMm, yMm, cWMm, cHMm, 'F')
+  pdf.rect(0, yMm, W, bh, 'F')
 
-  // Washi tape centred across top of card
-  const wWPx = Math.round(cardWPx * 0.56)
-  const wLPx = lPx + Math.round(cardWPx * 0.22)
-  drawWashi(pdf, wLPx, tPx - 11, wWPx, 22, colorIdx)
+  drawAccentBar(pdf, yMm, bh, false, entry.type)
 
-  // Photo area — light grey fill for letterbox bands
-  const photoXMm = xMm + px(PAD_S)
-  const photoYMm = yMm + px(PAD_T)
-  pdf.setFillColor(248, 248, 248)
-  pdf.rect(photoXMm, photoYMm, pWMm, pHMm, 'F')
+  // ── Photo area (left side) ────────────────────────────────────────────────
+  const PAD_V  = 7           // vertical padding within block
+  const IMG_SZ = bh - PAD_V * 2   // ~60 mm — square photo area
+  const IMG_X  = 7           // mm from left (after accent bar + gap)
+  const IMG_Y  = yMm + PAD_V
 
-  // Photo (object-fit: contain)
+  // Grey background for photo area (letterbox fill)
+  pdf.setFillColor(238, 238, 238)
+  pdf.rect(IMG_X, IMG_Y, IMG_SZ, IMG_SZ, 'F')
+
   if (entry.photo) {
     const img = await loadImage(entry.photo)
     if (img) {
-      const { w: dw, h: dh } = containFit(img.w, img.h, pWMm, pHMm)
-      const ox = (pWMm - dw) / 2
-      const oy = (pHMm - dh) / 2
-      pdf.addImage(img.data, 'JPEG', photoXMm + ox, photoYMm + oy, dw, dh)
+      const { w: dw, h: dh } = fitContain(img.w, img.h, IMG_SZ, IMG_SZ)
+      const ox = (IMG_SZ - dw) / 2
+      const oy = (IMG_SZ - dh) / 2
+      pdf.addImage(img.data, 'JPEG', IMG_X + ox, IMG_Y + oy, dw, dh)
     }
   }
 
-  // Caption
-  const capX  = xMm + cWMm / 2
-  const capY0 = yMm + px(PAD_T + phPx + 12)
+  // ── Text area (right side) ────────────────────────────────────────────────
+  const TX = IMG_X + IMG_SZ + 5   // text column x-start
+  const TW = W - TX - PAD          // text column width
+  let   curY = yMm + PAD_V + 5
 
-  putText(pdf, clipText(pdf, entry.title, pWMm), capX, capY0, {
-    style:'bold', size:9, color:'#2c2520', align:'center',
-  })
+  // Title
+  pdf.setFont('helvetica', 'bold')
+  pdf.setFontSize(11)
+  pdf.setTextColor(...hex('#2c2520'))
+  const titleLines = pdf.splitTextToSize(entry.title, TW)
+  pdf.text(titleLines.slice(0, 2), TX, curY)
+  curY += titleLines.slice(0, 2).length * 6 + 2
 
+  // Note (up to 4 lines)
   if (entry.note) {
-    const note = entry.note.length > 65 ? entry.note.slice(0, 65) + '…' : entry.note
-    putText(pdf, note, capX, capY0 + 5, {
-      size:7, color:'#9a8a7a', align:'center', maxWidth: pWMm,
-    })
-  }
-
-  const meta = [entry.uploadedByName, fmtDate(entry.date)].filter(Boolean).join('  ·  ')
-  if (meta) {
-    putText(pdf, meta, capX, capY0 + (entry.note ? 13 : 6), {
-      size:6.5, color:'#aaaaaa', align:'center',
-    })
-  }
-}
-
-const TEXT_CFG = {
-  1: [{ tPx:240, lPx:52 }],
-  2: [{ tPx: 40, lPx:52 }, { tPx:530, lPx:62 }],
-}
-
-function drawTextPage(pdf, entries, pageNum) {
-  fillPage(pdf, '#fdfaf5')
-
-  const n    = Math.min(entries.length, 2)
-  const cfgs = TEXT_CFG[n] || TEXT_CFG[2]
-
-  entries.slice(0, 2).forEach((entry, i) => {
-    drawLinedPaper(pdf, entry, cfgs[i], (pageNum + i) % WASHI.length)
-  })
-}
-
-function drawLinedPaper(pdf, entry, { tPx, lPx }, colorIdx) {
-  const PW = 686, PH = 400  // paper dimensions in px
-  const xMm = px(lPx), yMm = px(tPx)
-  const wMm = px(PW),  hMm = px(PH)
-
-  // Drop shadow
-  pdf.setFillColor(200, 195, 188)
-  pdf.rect(xMm + 0.6, yMm + 1.4, wMm, hMm, 'F')
-
-  // White paper
-  pdf.setFillColor(255, 255, 255)
-  pdf.rect(xMm, yMm, wMm, hMm, 'F')
-
-  // Red left margin line
-  const marginXPx = 68
-  vLine(pdf, lPx + marginXPx, tPx + 2, tPx + PH - 2, [240, 100, 100], 0.35)
-
-  // Blue horizontal ruled lines
-  const firstLinePx = 46     // first line offset from paper top
-  const lineGapPx   = 30     // line spacing
-  pdf.setDrawColor(174, 214, 241)
-  pdf.setLineWidth(0.22)
-  for (let y = tPx + firstLinePx; y < tPx + PH - 10; y += lineGapPx) {
-    pdf.line(xMm, px(y), xMm + wMm, px(y))
-  }
-
-  // Washi tape at top
-  const washiWPx = Math.round(PW * 0.34)
-  const washiLPx = lPx + Math.round(PW * 0.33)
-  drawWashi(pdf, washiLPx, tPx - 11, washiWPx, 22, colorIdx)
-
-  // Paper border
-  strokeRect(pdf, lPx, tPx, PW, PH, '#d8d0c6', 0.3)
-
-  // ── Text content ─────────────────────────────────────────────────────────
-  const contentXMm = px(lPx + marginXPx + 8)
-  const contentWMm = wMm - px(marginXPx + 34)
-  const lineHMm    = px(lineGapPx)
-  let   curY       = px(tPx + firstLinePx) - 1   // baseline sits on first ruled line
-
-  // Type + title
-  const title = `${TYPE_SHORT[entry.type] || entry.type}  ${entry.title}`
-  putText(pdf, clipText(pdf, title, contentWMm), contentXMm, curY, {
-    style:'bold', size:11, color:'#2c2520',
-  })
-  curY += lineHMm
-
-  // Date + author
-  const meta = [fmtDate(entry.date), entry.uploadedByName].filter(Boolean).join('  ·  ')
-  if (meta) {
-    putText(pdf, meta, contentXMm, curY, { style:'italic', size:8, color:'#aaaaaa' })
-    curY += lineHMm
-  }
-
-  // Note — line-wrapped to match ruled lines
-  if (entry.note) {
-    const note = entry.note.length > 260 ? entry.note.slice(0, 260) + '…' : entry.note
+    const note = entry.note.length > 220 ? entry.note.slice(0, 220) + '…' : entry.note
     pdf.setFont('helvetica', 'normal')
-    pdf.setFontSize(9)
-    pdf.setTextColor(...hexRGB('#4a3a2a'))
-    const lines    = pdf.splitTextToSize(note, contentWMm)
-    const maxLines = Math.floor((px(tPx + PH - 30) - curY) / lineHMm) + 1
-    lines.slice(0, maxLines).forEach(line => {
-      if (curY < px(tPx + PH - px(18))) {
-        pdf.text(line, contentXMm, curY)
-        curY += lineHMm
-      }
-    })
+    pdf.setFontSize(8)
+    pdf.setTextColor(...hex('#5a4a3a'))
+    const noteLines = pdf.splitTextToSize(note, TW)
+    pdf.text(noteLines.slice(0, 4), TX, curY)
+    curY += noteLines.slice(0, 4).length * 4.8 + 2
   }
 
-  // Tags (location + people)
-  if (curY < px(tPx + PH - 22)) {
-    const loc  = locText(entry.location)
-    const tags = [loc, ...(entry.people || [])].filter(Boolean)
-    if (tags.length) {
-      putText(pdf, tags.join('  |  '), contentXMm, curY, {
-        size:7.5, color:'#666666',
-      })
-    }
+  // People tags
+  if (entry.people && entry.people.length > 0) {
+    txt(pdf, entry.people.join(', '), TX, curY, { size:7, color:'#888888' })
+    curY += 5
   }
+
+  // Author · date · location — anchored near bottom of block
+  const meta = [entry.uploadedByName, fmtDate(entry.date), locText(entry.location)]
+    .filter(Boolean).join('  ·  ')
+  if (meta) {
+    txt(pdf, meta, TX, yMm + bh - PAD_V, { size:7, color:'#aaaaaa' })
+  }
+
+  drawSep(pdf, yMm + bh)
+}
+
+/** Text entry block (no photo) — 1/6 page. */
+function drawTextBlock(pdf, entry, yMm) {
+  const bh = BH_SMALL  // 49.5 mm
+
+  // Cream background
+  pdf.setFillColor(253, 250, 245)
+  pdf.rect(0, yMm, W, bh, 'F')
+
+  drawAccentBar(pdf, yMm, bh, false, entry.type)
+
+  const TX = 10, TW = W - TX - PAD
+  let curY = yMm + 11
+
+  // Type label + title
+  const label = TYPE_LABEL[entry.type] || ''
+  pdf.setFont('helvetica', 'bold')
+  pdf.setFontSize(10.5)
+  pdf.setTextColor(...hex('#2c2520'))
+  const titleFull  = `${label}  ${entry.title}`
+  const titleLines = pdf.splitTextToSize(titleFull, TW)
+  pdf.text(titleLines[0] + (titleLines.length > 1 ? '…' : ''), TX, curY)
+  curY += 7
+
+  // Note (up to 2 lines)
+  if (entry.note) {
+    const note = entry.note.length > 140 ? entry.note.slice(0, 140) + '…' : entry.note
+    pdf.setFont('helvetica', 'normal')
+    pdf.setFontSize(8.5)
+    pdf.setTextColor(...hex('#5a4a3a'))
+    const noteLines = pdf.splitTextToSize(note, TW)
+    pdf.text(noteLines.slice(0, 2), TX, curY)
+    curY += noteLines.slice(0, 2).length * 5 + 1
+  }
+
+  // People tags
+  if (entry.people && entry.people.length > 0) {
+    txt(pdf, entry.people.join(', '), TX, curY, { size:7, color:'#888888' })
+  }
+
+  // Meta — author · date · location
+  const meta = [entry.uploadedByName, fmtDate(entry.date), locText(entry.location)]
+    .filter(Boolean).join('  ·  ')
+  if (meta) {
+    txt(pdf, meta, TX, yMm + bh - 5, { size:7, color:'#aaaaaa' })
+  }
+
+  drawSep(pdf, yMm + bh)
+}
+
+// ─── Page packing ─────────────────────────────────────────────────────────────
+
+function packIntoPages(entries) {
+  /**
+   * Build a flat list of "block" descriptors, then bin them greedily
+   * into A4 pages of height H mm each.
+   */
+  const blocks = [
+    { kind: 'cover', height: BH_LARGE },
+    ...entries.map(e => ({
+      kind:   e.photo ? 'photo' : 'text',
+      entry:  e,
+      height: e.photo ? BH_LARGE : BH_SMALL,
+    })),
+  ]
+
+  const pages = []
+  let page = [], remaining = H
+
+  for (const block of blocks) {
+    if (block.height > remaining + 0.01) {
+      pages.push(page)
+      page = []
+      remaining = H
+    }
+    page.push({ ...block, yMm: H - remaining })
+    remaining -= block.height
+  }
+  if (page.length > 0) pages.push(page)
+  return pages
 }
 
 // ─── Public API ───────────────────────────────────────────────────────────────
 
 /**
- * Generate a jsPDF document from the pages array.
- * pages: array of { type:'cover'|'photos'|'text', entries, pageNum }
- * onProgress(0-100) called after each page.
+ * Build a PDF from the filtered entries array.
+ * onProgress(0–100) is called after each page is drawn.
  */
-export async function buildPdf(pages, onProgress) {
-  const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
+export async function buildPdf(entries, onProgress) {
+  const pdf   = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
+  const pages = packIntoPages(entries)
 
   for (let i = 0; i < pages.length; i++) {
     if (i > 0) pdf.addPage()
-    const page = pages[i]
 
-    if (page.type === 'cover')  drawCover(pdf, page.entries)
-    else if (page.type === 'photos') await drawPhotoPage(pdf, page.entries, page.pageNum || 0)
-    else if (page.type === 'text')   drawTextPage(pdf,    page.entries, page.pageNum || 0)
+    // Page background
+    pdf.setFillColor(253, 250, 245)
+    pdf.rect(0, 0, W, H, 'F')
+
+    for (const block of pages[i]) {
+      if      (block.kind === 'cover') drawCoverBlock(pdf, block.yMm, entries)
+      else if (block.kind === 'photo') await drawPhotoBlock(pdf, block.entry, block.yMm)
+      else                             drawTextBlock(pdf, block.entry, block.yMm)
+    }
 
     onProgress?.(Math.round(((i + 1) / pages.length) * 100))
   }

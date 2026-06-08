@@ -91,7 +91,7 @@ export default function DiaryGenerator({ entries }) {
     setGenerating(true)
     setProgress(0)
     try {
-      const pdf = await buildPdf(pages, setProgress)
+      const pdf = await buildPdf(filtered, setProgress)
       const filename = `diario-ella-${new Date().toISOString().slice(0, 10)}.pdf`
       pdf.save(filename)
     } catch (err) {
