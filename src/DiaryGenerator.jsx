@@ -1,6 +1,14 @@
 import { useState } from 'react'
+/* Cambio hecho con Chat GPT: se eliminan las páginas específicas 
+(CoverPage, PhotoPage, TextPage) y se reemplazan por una única 
+CompactPage que maneja todos los tipos de entrada. 
+También se ajusta la función composePages para generar solo páginas 
+compactas, simplificando el proceso de generación del PDF.
 import { CoverPage, PhotoPage, TextPage, PAGE_W, PAGE_H } from './DiaryPages'
-import { buildPdf } from './pdfUtils'
+import { buildPdf } from './pdfUtils'*/
+import { CompactPage, PAGE_W, PAGE_H } from './DiaryPages'
+import { buildPdf, compactPages } from './pdfUtils'
+
 
 const PREVIEW_SCALE = 0.22
 const PREV_W = Math.round(PAGE_W * PREVIEW_SCALE)  // 175px
@@ -35,26 +43,7 @@ function fmtDate(d) {
   return `${day}/${m}/${y}`
 }
 
-/** Build the list of page configs from filtered entries */
-function composePages(entries) {
-  if (!entries.length) return []
-  const sorted     = [...entries].sort((a, b) => (a.date ?? '').localeCompare(b.date ?? ''))
-  const pages      = [{ type: 'cover', entries: sorted }]
-  const withPhoto  = sorted.filter(e => e.photo)
-  const noPhoto    = sorted.filter(e => !e.photo)
-  for (let i = 0; i < withPhoto.length; i += 4)
-    pages.push({ type: 'photos', entries: withPhoto.slice(i, i + 4), pageNum: pages.length })
-  for (let i = 0; i < noPhoto.length; i += 3)
-    pages.push({ type: 'text',   entries: noPhoto.slice(i, i + 3),   pageNum: pages.length })
-  return pages
-}
 
-function PageRenderer({ page }) {
-  if (page.type === 'cover')  return <CoverPage entries={page.entries} />
-  if (page.type === 'photos') return <PhotoPage entries={page.entries} pageNum={page.pageNum} />
-  if (page.type === 'text')   return <TextPage  entries={page.entries} pageNum={page.pageNum} />
-  return null
-}
 
 export default function DiaryGenerator({ entries }) {
   const [dateFrom,       setDateFrom]       = useState('')
@@ -65,12 +54,14 @@ export default function DiaryGenerator({ entries }) {
   const [progress,       setProgress]       = useState(0)
   const [history,        setHistory]        = useState(loadHistory)
 
-  // ── Filtered entries ──────────────────────────────────────────────────────
-  const filtered = entries.filter(e => {
-    if (dateFrom && e.date < dateFrom) return false
-    if (dateTo   && e.date > dateTo)   return false
-    return selectedTypes.has(e.type)
-  })
+  // ── Filtered entries (sorted by date ascending) ───────────────────────────
+  const filtered = entries
+    .filter(e => {
+      if (dateFrom && e.date < dateFrom) return false
+      if (dateTo   && e.date > dateTo)   return false
+      return selectedTypes.has(e.type)
+    })
+    .sort((a, b) => (a.date ?? '').localeCompare(b.date ?? ''))
 
   // ── Filters helpers ───────────────────────────────────────────────────────
   function toggleType(t) {
@@ -83,8 +74,12 @@ export default function DiaryGenerator({ entries }) {
   }
 
   // ── Actions ───────────────────────────────────────────────────────────────
+  /*Cambio hecho con Chat GPT
   function handlePreview() {
     setPages(composePages(filtered))
+  }*/
+  function handlePreview() {
+  setPages(compactPages(filtered))
   }
 
   async function handleDownload() {
@@ -127,11 +122,11 @@ export default function DiaryGenerator({ entries }) {
       if (h.dateTo   && e.date > h.dateTo)   return false
       return h.types.includes(e.type)
     })
-    setPages(composePages(reFiltered))
+    setPages(compactPages(reFiltered))
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
-  const estimatedPages = filtered.length ? composePages(filtered).length : 0
+  const estimatedPages = filtered.length ? compactPages(filtered).length : 0
 
   return (
     <div className="diary-gen">
@@ -204,7 +199,7 @@ export default function DiaryGenerator({ entries }) {
                   <div style={{ width: PAGE_W, height: PAGE_H,
                     transform: `scale(${PREVIEW_SCALE})`, transformOrigin: 'top left',
                     pointerEvents: 'none' }}>
-                    <PageRenderer page={page} />
+                    <CompactPage blocks={page} allEntries={filtered} />
                   </div>
                 </div>
                 <div className="pdf-preview-thumb-num">p. {i + 1}</div>

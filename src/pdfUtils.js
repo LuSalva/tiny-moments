@@ -324,7 +324,18 @@ function packIntoPages(entries) {
 }
 
 // ─── Public API ───────────────────────────────────────────────────────────────
+export function compactPages(entries) {
+  const pages = packIntoPages(entries)
 
+  const PX_PER_MM = 794 / 210
+
+  return pages.map(page =>
+    page.map(block => ({
+      ...block,
+      yPx: block.yMm * PX_PER_MM,
+    }))
+  )
+}
 /**
  * Build a PDF from the filtered entries array.
  * onProgress(0–100) is called after each page is drawn.
