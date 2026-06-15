@@ -180,8 +180,12 @@ export default function DiaryGenerator({ entries }) {
           {estimatedPages > 0 && ` · ${estimatedPages} páginas aprox.`}
         </p>
 
+        {!dateFrom && !dateTo && (
+          <p className="diary-gen-date-hint">Seleccioná al menos una fecha para generar la vista previa.</p>
+        )}
+
         <button className="diary-gen-preview-btn" onClick={handlePreview}
-          disabled={filtered.length === 0}>
+          disabled={filtered.length === 0 || (!dateFrom && !dateTo)}>
           👁️ Generar vista previa
         </button>
       </section>
