@@ -1,0 +1,231 @@
+import { useState, useRef } from 'react'
+
+const TECHNIQUES = [
+  { value: 'dibujo',     emoji: '✏️',  label: 'Dibujo' },
+  { value: 'pintura',    emoji: '🎨',  label: 'Pintura' },
+  { value: 'manualidad', emoji: '✂️',  label: 'Manualidad' },
+  { value: 'otro',       emoji: '🌟',  label: 'Otro' },
+]
+
+const LOCATIONS = [
+  { value: 'home',         label: '🏠 Home' },
+  { value: 'de-heiacker',  label: '🏫 De Heiacker' },
+  { value: 'veldhoven',    label: '📍 Veldhoven' },
+  { value: 'other',        label: '✏️ Otro' },
+]
+
+const KNOWN_LOCATIONS = ['home', 'de-heiacker', 'veldhoven']
+
+const MAX_WIDTH = 1200
+const JPEG_QUALITY = 0.8
+
+function compressImage(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onerror = reject
+    reader.onload = (e) => {
+      const img = new Image()
+      img.onerror = reject
+      img.onload = () => {
+        const scale = img.width > MAX_WIDTH ? MAX_WIDTH / img.width : 1
+        const canvas = document.createElement('canvas')
+        canvas.width  = Math.round(img.width  * scale)
+        canvas.height = Math.round(img.height * scale)
+        canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height)
+        resolve(canvas.toDataURL('image/jpeg', JPEG_QUALITY))
+      }
+      img.src = e.target.result
+    }
+    reader.readAsDataURL(file)
+  })
+}
+
+function todayString() {
+  return new Date().toISOString().split('T')[0]
+}
+
+export default function ArtworkForm({ onSave, onCancel, initialArtwork }) {
+  const isEditing = Boolean(initialArtwork)
+
+  const initLocation = initialArtwork?.location ?? 'home'
+  const initIsOther  = initLocation && !KNOWN_LOCATIONS.includes(initLocation)
+
+  const [title,         setTitle]         = useState(initialArtwork?.title     ?? '')
+  const [technique,     setTechnique]     = useState(initialArtwork?.technique ?? 'dibujo')
+  const [note,          setNote]          = useState(initialArtwork?.note      ?? '')
+  const [date,          setDate]          = useState(initialArtwork?.date      ?? todayString())
+  const [photo,         setPhoto]         = useState(initialArtwork?.photo     ?? null)
+  const [photoPreview,  setPhotoPreview]  = useState(initialArtwork?.photo     ?? null)
+  const [location,      setLocation]      = useState(initIsOther ? 'other' : initLocation)
+  const [locationOther, setLocationOther] = useState(initIsOther ? initLocation : '')
+  const [saving,        setSaving]        = useState(false)
+  const [errors,        setErrors]        = useState({})
+  const [saveError,     setSaveError]     = useState(null)
+
+  const cameraRef  = useRef(null)
+  const galleryRef = useRef(null)
+
+  async function handlePhotoChange(e) {
+    const file = e.target.files[0]
+    if (!file) return
+    e.target.value = ''
+    const compressed = await compressImage(file)
+    setPhoto(compressed)
+    setPhotoPreview(compressed)
+  }
+
+  function validate() {
+    const errs = {}
+    if (!title.trim()) errs.title = 'El título es obligatorio'
+    if (!date)         errs.date  = 'La fecha es obligatoria'
+    return errs
+  }
+
+  async function handleSave() {
+    setSaveError(null)
+    const errs = validate()
+    if (Object.keys(errs).length > 0) { setErrors(errs); return }
+    setSaving(true)
+    try {
+      const locationValue = location === 'other' ? locationOther.trim() || 'Otro' : location
+      await onSave({ title: title.trim(), technique, note: note.trim(), date, photo, location: locationValue })
+    } catch (err) {
+      setSaveError(err.message || 'No se pudo guardar. Por favor, inténtalo de nuevo.')
+      setSaving(false)
+    }
+  }
+
+  return (
+    <form className="entry-form" onSubmit={e => e.preventDefault()}>
+      <div className="form-header">
+        <button type="button" className="back-button" onClick={onCancel}>← Volver</button>
+        <h2>{isEditing ? 'Editar obra' : 'Nueva obra'}</h2>
+      </div>
+
+      {/* Title */}
+      <div className="field">
+        <label htmlFor="artwork-title">Título *</label>
+        <input
+          id="artwork-title"
+          type="text"
+          placeholder="¿Cómo se llama esta obra?"
+          value={title}
+          onChange={e => setTitle(e.target.value)}
+          className={errors.title ? 'input-error' : ''}
+        />
+        {errors.title && <span className="error-text">{errors.title}</span>}
+      </div>
+
+      {/* Technique */}
+      <div className="field">
+        <label>Técnica</label>
+        <div className="type-buttons">
+          {TECHNIQUES.map(t => (
+            <button
+              key={t.value}
+              type="button"
+              className={`type-btn${technique === t.value ? ' type-btn--active' : ''}`}
+              onClick={() => setTechnique(t.value)}
+            >
+              <span className="type-emoji">{t.emoji}</span>
+              <span className="type-label">{t.label}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Note */}
+      <div className="field">
+        <label htmlFor="artwork-note">Nota</label>
+        <textarea
+          id="artwork-note"
+          placeholder="¿Qué hizo? ¿Qué materiales usó? ¿Qué edad tenía?"
+          value={note}
+          onChange={e => setNote(e.target.value)}
+          rows={4}
+        />
+      </div>
+
+      {/* Date */}
+      <div className="field">
+        <label htmlFor="artwork-date">Fecha *</label>
+        <input
+          id="artwork-date"
+          type="date"
+          value={date}
+          onChange={e => setDate(e.target.value)}
+          className={errors.date ? 'input-error' : ''}
+        />
+        {errors.date && <span className="error-text">{errors.date}</span>}
+      </div>
+
+      {/* Photo */}
+      <div className="field">
+        <label>Foto o scan</label>
+        {photoPreview && (
+          <div className="photo-preview-container" style={{ marginBottom: 10 }}>
+            <img src={photoPreview} alt="Vista previa" className="photo-preview" />
+          </div>
+        )}
+        <div className="photo-upload-btns">
+          <button type="button" className="photo-upload-btn" onClick={() => cameraRef.current?.click()}>
+            📷 Sacar foto
+          </button>
+          <button type="button" className="photo-upload-btn" onClick={() => galleryRef.current?.click()}>
+            🖼️ Subir scan / galería
+          </button>
+          {photoPreview && (
+            <button type="button" className="photo-upload-btn photo-upload-btn--remove"
+              onClick={() => { setPhoto(null); setPhotoPreview(null) }}>
+              🗑️ Quitar foto
+            </button>
+          )}
+        </div>
+        <input ref={cameraRef} type="file" accept="image/*" capture="environment"
+          onChange={handlePhotoChange} style={{ display: 'none' }} />
+        <input ref={galleryRef} type="file" accept="image/*"
+          onChange={handlePhotoChange} style={{ display: 'none' }} />
+      </div>
+
+      {/* Location */}
+      <div className="field">
+        <label>Lugar</label>
+        <div className="location-buttons">
+          {LOCATIONS.map(loc => (
+            <button
+              key={loc.value}
+              type="button"
+              className={`location-btn${location === loc.value ? ' location-btn--active' : ''}`}
+              onClick={() => setLocation(loc.value)}
+            >
+              {loc.label}
+            </button>
+          ))}
+        </div>
+        {location === 'other' && (
+          <input
+            type="text"
+            placeholder="¿Dónde fue?"
+            value={locationOther}
+            onChange={e => setLocationOther(e.target.value)}
+            className="other-location-input"
+          />
+        )}
+      </div>
+
+      {saveError && (
+        <div className="error-banner" role="alert">
+          <span>⚠️ {saveError}</span>
+          <button type="button" onClick={() => setSaveError(null)} aria-label="Cerrar">✕</button>
+        </div>
+      )}
+
+      <div className="form-actions">
+        <button type="button" className="btn-cancel" onClick={onCancel}>Cancelar</button>
+        <button type="button" className="btn-save" disabled={saving} onClick={handleSave}>
+          {saving ? 'Guardando...' : isEditing ? '💾 Guardar cambios' : '💾 Guardar obra'}
+        </button>
+      </div>
+    </form>
+  )
+}

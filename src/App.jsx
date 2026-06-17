@@ -3,10 +3,13 @@ import {
   getItems, addItem, updateItem, toggleItem, deleteItem,
   getLocalItems, migrateLocalToSupabase,
 } from './storage'
+import { getArtworks, addArtwork, updateArtwork, deleteArtwork } from './artworkStorage'
 import { useAuth } from './AuthContext'
 import LoginScreen from './LoginScreen'
 import EntryForm from './EntryForm'
 import EntryCard from './EntryCard'
+import ArtworkForm from './ArtworkForm'
+import ArtworkCard from './ArtworkCard'
 import { useInactivityTimeout } from './useInactivityTimeout'
 const DiaryGenerator = lazy(() => import('./DiaryGenerator'))
 
@@ -29,6 +32,11 @@ function AppShell({ signOut }) {
   const { minsLeft, resetTimer } = useInactivityTimeout(signOut)
   const [activeTab, setActiveTab] = useState('diary')
 
+  const [artworks,      setArtworks]      = useState([])
+  const [artworksError, setArtworksError] = useState(null)
+  const [showArtworkForm,   setShowArtworkForm]   = useState(false)
+  const [editingArtwork,    setEditingArtwork]    = useState(null)
+
   const currentUserId = session?.user?.id ?? null
   const isAdmin       = userProfile?.role === 'admin'
   const [entries, setEntries]           = useState([])
@@ -44,7 +52,49 @@ function AppShell({ signOut }) {
   useEffect(() => {
     setLocalCount(getLocalItems().length)
     loadEntries()
+    loadArtworks()
   }, [])
+
+  async function loadArtworks() {
+    try {
+      const data = await getArtworks()
+      setArtworks(data)
+    } catch (err) {
+      setArtworksError(err.message)
+    }
+  }
+
+  async function handleAddArtwork(item) {
+    await addArtwork(item)
+    await loadArtworks()
+    setShowArtworkForm(false)
+  }
+
+  function handleEditArtwork(artwork) {
+    setEditingArtwork(artwork)
+    setShowArtworkForm(true)
+  }
+
+  async function handleUpdateArtwork(item) {
+    await updateArtwork(editingArtwork.id, item)
+    await loadArtworks()
+    setEditingArtwork(null)
+    setShowArtworkForm(false)
+  }
+
+  function handleCloseArtworkForm() {
+    setEditingArtwork(null)
+    setShowArtworkForm(false)
+  }
+
+  async function handleDeleteArtwork(id) {
+    try {
+      await deleteArtwork(id)
+      await loadArtworks()
+    } catch (err) {
+      setArtworksError(err.message)
+    }
+  }
 
   async function loadEntries() {
     setLoading(true)
@@ -140,6 +190,18 @@ function AppShell({ signOut }) {
     )
   }
 
+  if (showArtworkForm) {
+    return (
+      <div className="app">
+        <ArtworkForm
+          onSave={editingArtwork ? handleUpdateArtwork : handleAddArtwork}
+          onCancel={handleCloseArtworkForm}
+          initialArtwork={editingArtwork}
+        />
+      </div>
+    )
+  }
+
   return (
     <div className="app">
       <header className="header">
@@ -198,6 +260,12 @@ function AppShell({ signOut }) {
             📔 Recuerdos
           </button>
           <button
+            className={`tab-btn${activeTab === 'art' ? ' tab-btn--active' : ''}`}
+            onClick={() => setActiveTab('art')}
+          >
+            🎨 Galería de Arte
+          </button>
+          <button
             className={`tab-btn${activeTab === 'pdf' ? ' tab-btn--active' : ''}`}
             onClick={() => setActiveTab('pdf')}
           >
@@ -205,7 +273,41 @@ function AppShell({ signOut }) {
           </button>
         </div>
 
-        {activeTab === 'pdf' ? (
+        {activeTab === 'art' ? (
+          <>
+            {artworksError && (
+              <div className="error-banner" role="alert">
+                <span>⚠️ {artworksError}</span>
+                <button onClick={() => setArtworksError(null)} aria-label="Cerrar">✕</button>
+              </div>
+            )}
+            <button className="add-button" onClick={() => setShowArtworkForm(true)}>
+              + Nueva obra
+            </button>
+            {artworks.length === 0 ? (
+              <div className="empty-state">
+                <div className="empty-emoji">🎨</div>
+                <h2>¡Aún no hay obras!</h2>
+                <p>Empezá a guardar los dibujos y creaciones de Ella 💕</p>
+              </div>
+            ) : (
+              <div className="entries-list">
+                {[...artworks]
+                  .sort((a, b) => new Date(b.date) - new Date(a.date))
+                  .map(artwork => (
+                    <ArtworkCard
+                      key={artwork.id}
+                      artwork={artwork}
+                      currentUserId={currentUserId}
+                      isAdmin={isAdmin}
+                      onEdit={handleEditArtwork}
+                      onDelete={handleDeleteArtwork}
+                    />
+                  ))}
+              </div>
+            )}
+          </>
+        ) : activeTab === 'pdf' ? (
           <Suspense fallback={<div className="loading">Cargando generador… 💛</div>}>
             <DiaryGenerator entries={entries} />
           </Suspense>
