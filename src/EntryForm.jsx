@@ -10,9 +10,10 @@ const TYPES = [
 ]
 
 const LOCATIONS = [
-  { value: 'home',       label: '🏠 Home' },
-  { value: 'veldhoven',  label: '📍 Veldhoven' },
-  { value: 'other',      label: '✏️ Otro' },
+  { value: 'home',        label: '🏠 Home' },
+  { value: 'de-heiacker', label: '🏫 De Heiacker' },
+  { value: 'veldhoven',   label: '📍 Veldhoven' },
+  { value: 'other',       label: '✏️ Otro' },
 ]
 
 const MAX_WIDTH = 800
@@ -43,7 +44,7 @@ function todayString() {
   return new Date().toISOString().split('T')[0]
 }
 
-const KNOWN_LOCATIONS = ['home', 'veldhoven']
+const KNOWN_LOCATIONS = ['home', 'de-heiacker', 'veldhoven']
 
 export default function EntryForm({ onSave, onCancel, initialEntry }) {
   const isEditing = Boolean(initialEntry)

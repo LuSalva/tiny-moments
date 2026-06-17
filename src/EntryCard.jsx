@@ -19,8 +19,9 @@ const TYPE_COLORS = {
 }
 
 const LOCATION_LABELS = {
-  home:      '🏠 Home',
-  veldhoven: '📍 Veldhoven',
+  'home':        '🏠 Home',
+  'de-heiacker': '🏫 De Heiacker',
+  'veldhoven':   '📍 Veldhoven',
 }
 
 function formatDate(dateStr) {
