@@ -113,6 +113,12 @@ export default function DiaryGenerator({ entries }) {
     alert('✅ Guardado en el historial.')
   }
 
+  function handleDeleteFromHistory(id) {
+    const updated = loadHistory().filter(h => h.id !== id)
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(updated))
+    setHistory(updated)
+  }
+
   function handleDownloadFromHistory(h) {
     setDateFrom(h.dateFrom || '')
     setDateTo(h.dateTo   || '')
@@ -249,10 +255,16 @@ export default function DiaryGenerator({ entries }) {
                     {' · '}{h.entryCount} recuerdos · {h.pageCount} pág.
                   </span>
                 </div>
-                <button className="diary-gen-tiny-btn"
-                  onClick={() => handleDownloadFromHistory(h)}>
-                  ⬇️ Descargar de nuevo
-                </button>
+                <div style={{ display:'flex', gap:6 }}>
+                  <button className="diary-gen-tiny-btn"
+                    onClick={() => handleDownloadFromHistory(h)}>
+                    ⬇️ Descargar de nuevo
+                  </button>
+                  <button className="diary-gen-tiny-btn diary-gen-tiny-btn--delete"
+                    onClick={() => handleDeleteFromHistory(h.id)}>
+                    🗑️ Borrar
+                  </button>
+                </div>
               </div>
             ))}
           </div>

@@ -103,6 +103,7 @@
   transition: all 0.15s;
 }
 .diary-gen-tiny-btn:hover { border-color: #ddd6f3; color: #5a4d66; }
+.diary-gen-tiny-btn--delete:hover { border-color: #fca5a5; color: #dc2626; }
 
 .diary-gen-summary {
   color: #9b8ca8;
