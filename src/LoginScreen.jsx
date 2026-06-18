@@ -15,7 +15,7 @@ export default function LoginScreen() {
     try {
       await signIn(email, password)
     } catch (err) {
-      setError(err.message || 'Credenciales incorrectas. Inténtalo de nuevo.')
+      setError(err.message || 'Incorrect credentials. Please try again.')
     } finally {
       setLoading(false)
     }
@@ -25,25 +25,25 @@ export default function LoginScreen() {
     <div className="login-container">
       <div className="login-card">
         <div className="login-header">
-          <div className="login-emoji">🌈</div>
-          <h1>Abrazo Familiar</h1>
-          <p>Un diario de momentos especiales 💕</p>
+          <div className="login-emoji">🌱</div>
+          <h1>Tiny Moments</h1>
+          <p>A keeper of the little things that matter 💕</p>
         </div>
 
         <form className="login-form" onSubmit={handleSubmit}>
           {error && (
             <div className="error-banner" role="alert">
               <span>⚠️ {error}</span>
-              <button type="button" onClick={() => setError(null)} aria-label="Cerrar">✕</button>
+              <button type="button" onClick={() => setError(null)} aria-label="Close">✕</button>
             </div>
           )}
 
           <div className="field">
-            <label htmlFor="login-email">Correo electrónico</label>
+            <label htmlFor="login-email">Email</label>
             <input
               id="login-email"
               type="email"
-              placeholder="tu@correo.com"
+              placeholder="your@email.com"
               value={email}
               onChange={e => setEmail(e.target.value)}
               required
@@ -53,7 +53,7 @@ export default function LoginScreen() {
           </div>
 
           <div className="field">
-            <label htmlFor="login-password">Contraseña</label>
+            <label htmlFor="login-password">Password</label>
             <input
               id="login-password"
               type="password"
@@ -66,7 +66,7 @@ export default function LoginScreen() {
           </div>
 
           <button type="submit" className="btn-save login-btn" disabled={loading}>
-            {loading ? 'Iniciando sesión…' : '🔑 Iniciar sesión'}
+            {loading ? 'Signing in…' : '🔑 Sign in'}
           </button>
         </form>
       </div>

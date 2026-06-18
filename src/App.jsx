@@ -157,7 +157,7 @@ function AppShell({ signOut }) {
       const count = await migrateLocalToSupabase()
       setLocalCount(0)
       await loadEntries()
-      alert(`✅ ¡${count} recuerdo${count !== 1 ? 's' : ''} importado${count !== 1 ? 's' : ''} correctamente!`)
+      alert(`✅ ${count} memory item${count !== 1 ? 's' : ''} imported successfully!`)
     } catch (err) {
       setMigrateError(err.message)
     } finally {
@@ -205,11 +205,11 @@ function AppShell({ signOut }) {
   return (
     <div className="app">
       <header className="header">
-        <button className="logout-btn" onClick={signOut} title="Cerrar sesión">
-          Cerrar sesión
+        <button className="logout-btn" onClick={signOut} title="Sign out">
+          Sign out
         </button>
-        <h1>🌈 Abrazo Familiar</h1>
-        <p className="subtitle">Un diario de momentos especiales 💕</p>
+        <h1>🌱 Tiny Moments</h1>
+        <p className="subtitle">A keeper of the little things that matter 💕</p>
       </header>
 
       <main className="main">
@@ -217,11 +217,11 @@ function AppShell({ signOut }) {
         {minsLeft !== null && (
           <div className="inactivity-banner" role="alert">
             <span>
-              ⏰ Tu sesión cerrará por inactividad en{' '}
-              <strong>{minsLeft} minuto{minsLeft !== 1 ? 's' : ''}</strong>.
+              ⏰ Your session will close due to inactivity in{' '}
+              <strong>{minsLeft} minute{minsLeft !== 1 ? 's' : ''}</strong>.
             </span>
             <button className="inactivity-stay-btn" onClick={resetTimer}>
-              Seguir conectada
+              Stay connected
             </button>
           </div>
         )}
@@ -230,15 +230,15 @@ function AppShell({ signOut }) {
         {localCount > 0 && (
           <div className="migration-banner">
             <div className="migration-text">
-              <strong>📦 Tienes {localCount} recuerdo{localCount !== 1 ? 's' : ''} guardado{localCount !== 1 ? 's' : ''} localmente.</strong>
-              <span>Impórtalos a Supabase para no perderlos.</span>
+              <strong>📦 You have {localCount} memory item{localCount !== 1 ? 's' : ''} saved locally.</strong>
+              <span>Import them to the cloud so you don't lose them.</span>
             </div>
             <button
               className="migration-btn"
               onClick={handleMigrate}
               disabled={migrating}
             >
-              {migrating ? 'Importando…' : '☁️ Importar datos locales'}
+              {migrating ? 'Importing…' : '☁️ Import local data'}
             </button>
             {migrateError && <p className="migrate-error">⚠️ {migrateError}</p>}
           </div>
@@ -257,19 +257,19 @@ function AppShell({ signOut }) {
             className={`tab-btn${activeTab === 'diary' ? ' tab-btn--active' : ''}`}
             onClick={() => setActiveTab('diary')}
           >
-            📔 Recuerdos
+            📔 Memories
           </button>
           <button
             className={`tab-btn${activeTab === 'art' ? ' tab-btn--active' : ''}`}
             onClick={() => setActiveTab('art')}
           >
-            🎨 Galería de Arte
+            🎨 Art Gallery
           </button>
           <button
             className={`tab-btn${activeTab === 'pdf' ? ' tab-btn--active' : ''}`}
             onClick={() => setActiveTab('pdf')}
           >
-            📄 Generar diario
+            📄 Generate diary
           </button>
         </div>
 
@@ -282,13 +282,13 @@ function AppShell({ signOut }) {
               </div>
             )}
             <button className="add-button" onClick={() => setShowArtworkForm(true)}>
-              + Nueva obra
+              + New artwork
             </button>
             {artworks.length === 0 ? (
               <div className="empty-state">
                 <div className="empty-emoji">🎨</div>
-                <h2>¡Aún no hay obras!</h2>
-                <p>Empezá a guardar los dibujos y creaciones de Ella 💕</p>
+                <h2>No artworks yet!</h2>
+                <p>Start saving drawings and creations 💕</p>
               </div>
             ) : (
               <div className="entries-list">
@@ -308,7 +308,7 @@ function AppShell({ signOut }) {
             )}
           </>
         ) : activeTab === 'pdf' ? (
-          <Suspense fallback={<div className="loading">Cargando generador… 💛</div>}>
+          <Suspense fallback={<div className="loading">Loading generator… 💛</div>}>
             <DiaryGenerator entries={entries} artworks={artworks} />
           </Suspense>
         ) : (
@@ -316,10 +316,10 @@ function AppShell({ signOut }) {
             <div className="search-bar">
               <input
                 type="text"
-                placeholder="🔍 Buscar por persona..."
+                placeholder="🔍 Search by person..."
                 value={searchPerson}
                 onChange={e => setSearchPerson(e.target.value)}
-                aria-label="Buscar por persona"
+                aria-label="Search by person"
               />
               {searchPerson && (
                 <button
@@ -333,23 +333,23 @@ function AppShell({ signOut }) {
             </div>
 
             <button className="add-button" onClick={() => setShowForm(true)}>
-              + Nuevo recuerdo
+              + New memory
             </button>
 
             {loading ? (
-              <div className="loading">Cargando recuerdos… 💛</div>
+              <div className="loading">Loading memories… 💛</div>
             ) : filtered.length === 0 ? (
               <div className="empty-state">
                 <div className="empty-emoji">🌈</div>
                 {searchPerson ? (
                   <>
-                    <h2>Sin resultados</h2>
-                    <p>No hay recuerdos con <strong>{searchPerson}</strong>.</p>
+                    <h2>No results</h2>
+                    <p>No memories with <strong>{searchPerson}</strong>.</p>
                   </>
                 ) : (
                   <>
-                    <h2>¡Aún no hay recuerdos!</h2>
-                    <p>Empieza a capturar los momentos especiales de tu hija 💕</p>
+                    <h2>No memories yet!</h2>
+                    <p>Start capturing the special moments 💕</p>
                   </>
                 )}
               </div>
