@@ -44,8 +44,8 @@ const RAINBOW_COLORS = [
 ]
 
 const TYPE_LABEL = {
-  frase:'Frase', creacion:'Creación', foto:'Foto',
-  hito:'Hito',   cancion:'Canción',  recuerdo:'Recuerdo',
+  frase:'Quote', creacion:'Creation', foto:'Photo',
+  hito:'Milestone', cancion:'Song', recuerdo:'Memory',
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -135,7 +135,7 @@ function CoverBlock({ yPx, allEntries }) {
         color:'#2c2520', lineHeight:1.15,
         whiteSpace:'nowrap', overflow:'hidden',
       }}>
-        El diario de Ella
+        Mia's Diary
       </div>
 
       {/* Date range */}
@@ -157,7 +157,7 @@ function CoverBlock({ yPx, allEntries }) {
         fontSize: Math.round(bh * 0.058),
         color:'#b8a898',
       }}>
-        {(allEntries || []).length} recuerdos
+        {(allEntries || []).length} memories
       </div>
 
       <Sep blockH={bh} />

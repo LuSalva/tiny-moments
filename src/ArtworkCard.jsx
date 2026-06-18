@@ -64,16 +64,16 @@ export default function ArtworkCard({ artwork, currentUserId, isAdmin, onEdit, o
         <div className="card-actions" onClick={e => e.stopPropagation()}>
           {canEdit && (
             <>
-              <button className="edit-btn" onClick={() => onEdit(artwork)} title="Editar" aria-label="Editar">
+              <button className="edit-btn" onClick={() => onEdit(artwork)} title="Edit" aria-label="Edit">
                 ✏️
               </button>
               <button
                 className={`delete-btn${confirmDelete ? ' delete-btn--confirm' : ''}`}
                 onClick={handleDelete}
-                title={confirmDelete ? 'Pulsa de nuevo para confirmar' : 'Eliminar'}
-                aria-label="Eliminar"
+                title={confirmDelete ? 'Tap again to confirm' : 'Delete'}
+                aria-label="Delete"
               >
-                {confirmDelete ? '¿Borrar?' : '🗑️'}
+                {confirmDelete ? 'Delete?' : '🗑️'}
               </button>
             </>
           )}

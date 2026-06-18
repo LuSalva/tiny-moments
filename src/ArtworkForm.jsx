@@ -1,17 +1,17 @@
 import { useState, useRef } from 'react'
 
 const TECHNIQUES = [
-  { value: 'dibujo',     emoji: '✏️',  label: 'Dibujo' },
-  { value: 'pintura',    emoji: '🎨',  label: 'Pintura' },
-  { value: 'manualidad', emoji: '✂️',  label: 'Manualidad' },
-  { value: 'otro',       emoji: '🌟',  label: 'Otro' },
+  { value: 'dibujo',     emoji: '✏️',  label: 'Drawing' },
+  { value: 'pintura',    emoji: '🎨',  label: 'Painting' },
+  { value: 'manualidad', emoji: '✂️',  label: 'Craft' },
+  { value: 'otro',       emoji: '🌟',  label: 'Other' },
 ]
 
 const LOCATIONS = [
   { value: 'home',         label: '🏠 Home' },
   { value: 'de-heiacker',  label: '🏫 De Heiacker' },
   { value: 'veldhoven',    label: '📍 Veldhoven' },
-  { value: 'other',        label: '✏️ Otro' },
+  { value: 'other',        label: '✏️ Other' },
 ]
 
 const KNOWN_LOCATIONS = ['home', 'de-heiacker', 'veldhoven']
@@ -76,8 +76,8 @@ export default function ArtworkForm({ onSave, onCancel, initialArtwork }) {
 
   function validate() {
     const errs = {}
-    if (!title.trim()) errs.title = 'El título es obligatorio'
-    if (!date)         errs.date  = 'La fecha es obligatoria'
+    if (!title.trim()) errs.title = 'Title is required'
+    if (!date)         errs.date  = 'Date is required'
     return errs
   }
 
@@ -87,10 +87,10 @@ export default function ArtworkForm({ onSave, onCancel, initialArtwork }) {
     if (Object.keys(errs).length > 0) { setErrors(errs); return }
     setSaving(true)
     try {
-      const locationValue = location === 'other' ? locationOther.trim() || 'Otro' : location
+      const locationValue = location === 'other' ? locationOther.trim() || 'Other' : location
       await onSave({ title: title.trim(), technique, note: note.trim(), date, photo, location: locationValue })
     } catch (err) {
-      setSaveError(err.message || 'No se pudo guardar. Por favor, inténtalo de nuevo.')
+      setSaveError(err.message || 'Could not save. Please try again.')
       setSaving(false)
     }
   }
@@ -98,17 +98,17 @@ export default function ArtworkForm({ onSave, onCancel, initialArtwork }) {
   return (
     <form className="entry-form" onSubmit={e => e.preventDefault()}>
       <div className="form-header">
-        <button type="button" className="back-button" onClick={onCancel}>← Volver</button>
-        <h2>{isEditing ? 'Editar obra' : 'Nueva obra'}</h2>
+        <button type="button" className="back-button" onClick={onCancel}>← Back</button>
+        <h2>{isEditing ? 'Edit artwork' : 'New artwork'}</h2>
       </div>
 
       {/* Title */}
       <div className="field">
-        <label htmlFor="artwork-title">Título *</label>
+        <label htmlFor="artwork-title">Title *</label>
         <input
           id="artwork-title"
           type="text"
-          placeholder="¿Cómo se llama esta obra?"
+          placeholder="What is this artwork called?"
           value={title}
           onChange={e => setTitle(e.target.value)}
           className={errors.title ? 'input-error' : ''}
@@ -118,7 +118,7 @@ export default function ArtworkForm({ onSave, onCancel, initialArtwork }) {
 
       {/* Technique */}
       <div className="field">
-        <label>Técnica</label>
+        <label>Technique</label>
         <div className="type-buttons">
           {TECHNIQUES.map(t => (
             <button
@@ -136,10 +136,10 @@ export default function ArtworkForm({ onSave, onCancel, initialArtwork }) {
 
       {/* Note */}
       <div className="field">
-        <label htmlFor="artwork-note">Nota</label>
+        <label htmlFor="artwork-note">Note</label>
         <textarea
           id="artwork-note"
-          placeholder="¿Qué hizo? ¿Qué materiales usó? ¿Qué edad tenía?"
+          placeholder="What did they make? What materials? How old were they?"
           value={note}
           onChange={e => setNote(e.target.value)}
           rows={4}
@@ -148,7 +148,7 @@ export default function ArtworkForm({ onSave, onCancel, initialArtwork }) {
 
       {/* Date */}
       <div className="field">
-        <label htmlFor="artwork-date">Fecha *</label>
+        <label htmlFor="artwork-date">Date *</label>
         <input
           id="artwork-date"
           type="date"
@@ -161,23 +161,23 @@ export default function ArtworkForm({ onSave, onCancel, initialArtwork }) {
 
       {/* Photo */}
       <div className="field">
-        <label>Foto o scan</label>
+        <label>Photo or scan</label>
         {photoPreview && (
           <div className="photo-preview-container" style={{ marginBottom: 10 }}>
-            <img src={photoPreview} alt="Vista previa" className="photo-preview" />
+            <img src={photoPreview} alt="Preview" className="photo-preview" />
           </div>
         )}
         <div className="photo-upload-btns">
           <button type="button" className="photo-upload-btn" onClick={() => cameraRef.current?.click()}>
-            📷 Sacar foto
+            📷 Take photo
           </button>
           <button type="button" className="photo-upload-btn" onClick={() => galleryRef.current?.click()}>
-            🖼️ Subir scan / galería
+            🖼️ Upload scan / gallery
           </button>
           {photoPreview && (
             <button type="button" className="photo-upload-btn photo-upload-btn--remove"
               onClick={() => { setPhoto(null); setPhotoPreview(null) }}>
-              🗑️ Quitar foto
+              🗑️ Remove photo
             </button>
           )}
         </div>
@@ -189,7 +189,7 @@ export default function ArtworkForm({ onSave, onCancel, initialArtwork }) {
 
       {/* Location */}
       <div className="field">
-        <label>Lugar</label>
+        <label>Location</label>
         <div className="location-buttons">
           {LOCATIONS.map(loc => (
             <button
@@ -205,7 +205,7 @@ export default function ArtworkForm({ onSave, onCancel, initialArtwork }) {
         {location === 'other' && (
           <input
             type="text"
-            placeholder="¿Dónde fue?"
+            placeholder="Where was it?"
             value={locationOther}
             onChange={e => setLocationOther(e.target.value)}
             className="other-location-input"
@@ -216,14 +216,14 @@ export default function ArtworkForm({ onSave, onCancel, initialArtwork }) {
       {saveError && (
         <div className="error-banner" role="alert">
           <span>⚠️ {saveError}</span>
-          <button type="button" onClick={() => setSaveError(null)} aria-label="Cerrar">✕</button>
+          <button type="button" onClick={() => setSaveError(null)} aria-label="Close">✕</button>
         </div>
       )}
 
       <div className="form-actions">
-        <button type="button" className="btn-cancel" onClick={onCancel}>Cancelar</button>
+        <button type="button" className="btn-cancel" onClick={onCancel}>Cancel</button>
         <button type="button" className="btn-save" disabled={saving} onClick={handleSave}>
-          {saving ? 'Guardando...' : isEditing ? '💾 Guardar cambios' : '💾 Guardar obra'}
+          {saving ? 'Saving...' : isEditing ? '💾 Save changes' : '💾 Save artwork'}
         </button>
       </div>
     </form>

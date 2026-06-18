@@ -46,7 +46,6 @@ export default function EntryCard({
     LOCATION_LABELS[entry.location] ||
     (entry.location ? `📍 ${entry.location}` : null)
 
-  // Owner or admin may edit, delete and toggle favourite
   const canEdit = isAdmin || entry.userId === currentUserId
 
   function handleDelete(e) {
@@ -85,26 +84,26 @@ export default function EntryCard({
               <button
                 className={`fav-btn${entry.favourite ? ' fav-btn--active' : ''}`}
                 onClick={() => onToggle(entry.id)}
-                title="Marcar como favorito"
-                aria-label="Favorito"
+                title="Mark as favourite"
+                aria-label="Favourite"
               >
                 {entry.favourite ? '❤️' : '🤍'}
               </button>
               <button
                 className="edit-btn"
                 onClick={() => onEdit(entry)}
-                title="Editar"
-                aria-label="Editar"
+                title="Edit"
+                aria-label="Edit"
               >
                 ✏️
               </button>
               <button
                 className={`delete-btn${confirmDelete ? ' delete-btn--confirm' : ''}`}
                 onClick={handleDelete}
-                title={confirmDelete ? 'Pulsa de nuevo para confirmar' : 'Eliminar'}
-                aria-label="Eliminar"
+                title={confirmDelete ? 'Tap again to confirm' : 'Delete'}
+                aria-label="Delete"
               >
-                {confirmDelete ? '¿Borrar?' : '🗑️'}
+                {confirmDelete ? 'Delete?' : '🗑️'}
               </button>
             </>
           )}

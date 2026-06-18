@@ -4,20 +4,20 @@ import { buildPdf, compactPages, buildArtworkPdf, compactArtworkPages } from './
 
 
 const PREVIEW_SCALE = 0.22
-const PREV_W = Math.round(PAGE_W * PREVIEW_SCALE)  // 175px
-const PREV_H = Math.round(PAGE_H * PREVIEW_SCALE)  // 247px
+const PREV_W = Math.round(PAGE_W * PREVIEW_SCALE)
+const PREV_H = Math.round(PAGE_H * PREVIEW_SCALE)
 
 const ALL_TYPES = ['frase', 'creacion', 'foto', 'hito', 'cancion', 'recuerdo']
 const TYPE_LABELS = {
-  frase:    '💬 Frase',
-  creacion: '🎨 Creación',
-  foto:     '📸 Foto',
-  hito:     '🌟 Hito',
-  cancion:  '🎵 Canción',
-  recuerdo: '💛 Recuerdo',
+  frase:    '💬 Quote',
+  creacion: '🎨 Creation',
+  foto:     '📸 Photo',
+  hito:     '🌟 Milestone',
+  cancion:  '🎵 Song',
+  recuerdo: '💛 Memory',
 }
 
-const HISTORY_KEY = 'abrazo-familiar-pdf-history'
+const HISTORY_KEY = 'tiny-moments-pdf-history'
 
 function loadHistory() {
   try { return JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]') }
@@ -36,18 +36,16 @@ function fmtDate(d) {
   return `${day}/${m}/${y}`
 }
 
-
-
 const TECHNIQUE_LABELS = {
-  dibujo:     '✏️ Dibujo',
-  pintura:    '🎨 Pintura',
-  manualidad: '✂️ Manualidad',
-  otro:       '🌟 Otro',
+  dibujo:     '✏️ Drawing',
+  pintura:    '🎨 Painting',
+  manualidad: '✂️ Craft',
+  otro:       '🌟 Other',
 }
 const ALL_TECHNIQUES = ['dibujo', 'pintura', 'manualidad', 'otro']
 
 export default function DiaryGenerator({ entries, artworks = [] }) {
-  const [mode,           setMode]           = useState('recuerdos') // 'recuerdos' | 'arte'
+  const [mode,           setMode]           = useState('recuerdos')
   const [dateFrom,       setDateFrom]       = useState('')
   const [dateTo,         setDateTo]         = useState('')
   const [selectedTypes,  setSelectedTypes]  = useState(new Set(ALL_TYPES))
@@ -57,7 +55,6 @@ export default function DiaryGenerator({ entries, artworks = [] }) {
   const [progress,       setProgress]       = useState(0)
   const [history,        setHistory]        = useState(loadHistory)
 
-  // ── Filtered entries/artworks (sorted by date ascending) ─────────────────
   const filtered = entries
     .filter(e => {
       if (dateFrom && e.date < dateFrom) return false
@@ -76,7 +73,6 @@ export default function DiaryGenerator({ entries, artworks = [] }) {
 
   const activeFiltered = mode === 'arte' ? filteredArt : filtered
 
-  // ── Filters helpers ───────────────────────────────────────────────────────
   function toggleType(t) {
     setSelectedTypes(prev => {
       const n = new Set(prev)
@@ -102,11 +98,6 @@ export default function DiaryGenerator({ entries, artworks = [] }) {
     setDateTo('')
   }
 
-  // ── Actions ───────────────────────────────────────────────────────────────
-  /*Cambio hecho con Chat GPT
-  function handlePreview() {
-    setPages(composePages(filtered))
-  }*/
   function handlePreview() {
     if (mode === 'arte') setPages(compactArtworkPages(filteredArt))
     else                 setPages(compactPages(filtered))
@@ -121,12 +112,12 @@ export default function DiaryGenerator({ entries, artworks = [] }) {
         ? await buildArtworkPdf(filteredArt, setProgress)
         : await buildPdf(filtered, setProgress)
       const filename = mode === 'arte'
-        ? `galeria-arte-ella-${date}.pdf`
-        : `diario-ella-${date}.pdf`
+        ? `art-gallery-mia-${date}.pdf`
+        : `diary-mia-${date}.pdf`
       pdf.save(filename)
     } catch (err) {
       console.error('PDF generation failed:', err)
-      alert('Error al generar el PDF. Por favor, inténtalo de nuevo.')
+      alert('Error generating the PDF. Please try again.')
     } finally {
       setGenerating(false)
       setProgress(0)
@@ -145,7 +136,7 @@ export default function DiaryGenerator({ entries, artworks = [] }) {
     }
     saveToHistory(entry)
     setHistory(loadHistory())
-    alert('✅ Guardado en el historial.')
+    alert('✅ Saved to history.')
   }
 
   function handleDeleteFromHistory(id) {
@@ -176,7 +167,7 @@ export default function DiaryGenerator({ entries, artworks = [] }) {
 
       {/* ── Filters ──────────────────────────────────────────────────── */}
       <section className="diary-gen-section">
-        <h2 className="diary-gen-title">📄 Generar PDF</h2>
+        <h2 className="diary-gen-title">📄 Generate PDF</h2>
 
         {/* Mode toggle */}
         <div className="diary-gen-mode-toggle">
@@ -184,13 +175,13 @@ export default function DiaryGenerator({ entries, artworks = [] }) {
             className={`diary-gen-mode-btn${mode === 'recuerdos' ? ' diary-gen-mode-btn--active' : ''}`}
             onClick={() => handleModeChange('recuerdos')}
           >
-            📔 Recuerdos
+            📔 Memories
           </button>
           <button
             className={`diary-gen-mode-btn${mode === 'arte' ? ' diary-gen-mode-btn--active' : ''}`}
             onClick={() => handleModeChange('arte')}
           >
-            🎨 Galería de Arte
+            🎨 Art Gallery
           </button>
         </div>
 
@@ -198,29 +189,29 @@ export default function DiaryGenerator({ entries, artworks = [] }) {
           {/* Date range */}
           <div className="diary-gen-dates">
             <div className="field">
-              <label htmlFor="pdf-from">Desde</label>
+              <label htmlFor="pdf-from">From</label>
               <input id="pdf-from" type="date" value={dateFrom}
                 onChange={e => { setDateFrom(e.target.value); setPages([]) }} />
             </div>
             <div className="field">
-              <label htmlFor="pdf-to">Hasta</label>
+              <label htmlFor="pdf-to">To</label>
               <input id="pdf-to" type="date" value={dateTo}
                 onChange={e => { setDateTo(e.target.value); setPages([]) }} />
             </div>
           </div>
 
-          {/* Type filter — recuerdos */}
+          {/* Type filter — memories */}
           {mode === 'recuerdos' && (
             <div>
               <div className="diary-gen-type-header">
-                <span>Tipos de recuerdo</span>
+                <span>Memory types</span>
                 <button className="diary-gen-tiny-btn"
                   onClick={() => { setSelectedTypes(new Set(ALL_TYPES)); setPages([]) }}>
-                  Seleccionar todo
+                  Select all
                 </button>
                 <button className="diary-gen-tiny-btn"
                   onClick={() => { setSelectedTypes(new Set()); setPages([]) }}>
-                  Deseleccionar todo
+                  Deselect all
                 </button>
               </div>
               <div className="diary-gen-type-checks">
@@ -235,18 +226,18 @@ export default function DiaryGenerator({ entries, artworks = [] }) {
             </div>
           )}
 
-          {/* Technique filter — arte */}
+          {/* Technique filter — art */}
           {mode === 'arte' && (
             <div>
               <div className="diary-gen-type-header">
-                <span>Técnicas</span>
+                <span>Techniques</span>
                 <button className="diary-gen-tiny-btn"
                   onClick={() => { setSelectedTechs(new Set(ALL_TECHNIQUES)); setPages([]) }}>
-                  Seleccionar todo
+                  Select all
                 </button>
                 <button className="diary-gen-tiny-btn"
                   onClick={() => { setSelectedTechs(new Set()); setPages([]) }}>
-                  Deseleccionar todo
+                  Deselect all
                 </button>
               </div>
               <div className="diary-gen-type-checks">
@@ -264,26 +255,26 @@ export default function DiaryGenerator({ entries, artworks = [] }) {
 
         <p className="diary-gen-summary">
           {mode === 'arte'
-            ? `${filteredArt.length} obra${filteredArt.length !== 1 ? 's' : ''} seleccionada${filteredArt.length !== 1 ? 's' : ''}`
-            : `${filtered.length} recuerdo${filtered.length !== 1 ? 's' : ''} seleccionado${filtered.length !== 1 ? 's' : ''}`
+            ? `${filteredArt.length} artwork${filteredArt.length !== 1 ? 's' : ''} selected`
+            : `${filtered.length} memor${filtered.length !== 1 ? 'ies' : 'y'} selected`
           }
-          {estimatedPages > 0 && ` · ${estimatedPages} páginas aprox.`}
+          {estimatedPages > 0 && ` · ~${estimatedPages} pages`}
         </p>
 
         {!dateFrom && !dateTo && (
-          <p className="diary-gen-date-hint">Seleccioná al menos una fecha para generar la vista previa.</p>
+          <p className="diary-gen-date-hint">Select at least one date to generate a preview.</p>
         )}
 
         <button className="diary-gen-preview-btn" onClick={handlePreview}
           disabled={activeFiltered.length === 0 || (!dateFrom && !dateTo)}>
-          👁️ Generar vista previa
+          👁️ Generate preview
         </button>
       </section>
 
       {/* ── Preview ──────────────────────────────────────────────────── */}
       {pages.length > 0 && (
         <section className="diary-gen-section">
-          <h3 className="diary-gen-subtitle">Vista previa — {pages.length} páginas</h3>
+          <h3 className="diary-gen-subtitle">Preview — {pages.length} pages</h3>
 
           <div className="pdf-preview-grid">
             {pages.map((page, i) => (
@@ -304,11 +295,11 @@ export default function DiaryGenerator({ entries, artworks = [] }) {
           <div className="diary-gen-actions">
             <button className="diary-gen-download-btn" onClick={handleDownload}
               disabled={generating}>
-              {generating ? `Generando… ${progress}%` : '⬇️ Descargar PDF'}
+              {generating ? `Generating… ${progress}%` : '⬇️ Download PDF'}
             </button>
             <button className="diary-gen-save-btn" onClick={handleSaveHistory}
               disabled={generating}>
-              💾 Guardar en historial
+              💾 Save to history
             </button>
           </div>
 
@@ -323,30 +314,30 @@ export default function DiaryGenerator({ entries, artworks = [] }) {
       {/* ── History ──────────────────────────────────────────────────── */}
       {history.length > 0 && (
         <section className="diary-gen-section">
-          <h3 className="diary-gen-subtitle">Historial</h3>
+          <h3 className="diary-gen-subtitle">History</h3>
           <div className="diary-gen-history">
             {history.map(h => (
               <div key={h.id} className="diary-gen-history-item">
                 <div className="diary-gen-history-info">
                   <strong>
-                    {new Date(h.generatedAt).toLocaleDateString('es-ES',
+                    {new Date(h.generatedAt).toLocaleDateString('en-GB',
                       { day: '2-digit', month: 'short', year: 'numeric' })}
                   </strong>
                   <span>
                     {h.dateFrom
-                      ? `${fmtDate(h.dateFrom)} – ${h.dateTo ? fmtDate(h.dateTo) : 'hoy'}`
-                      : 'Todos los recuerdos'}
-                    {' · '}{h.entryCount} recuerdos · {h.pageCount} pág.
+                      ? `${fmtDate(h.dateFrom)} – ${h.dateTo ? fmtDate(h.dateTo) : 'today'}`
+                      : 'All memories'}
+                    {' · '}{h.entryCount} memor{h.entryCount !== 1 ? 'ies' : 'y'} · {h.pageCount} p.
                   </span>
                 </div>
                 <div style={{ display:'flex', gap:6 }}>
                   <button className="diary-gen-tiny-btn"
                     onClick={() => handleDownloadFromHistory(h)}>
-                    ⬇️ Descargar de nuevo
+                    ⬇️ Download again
                   </button>
                   <button className="diary-gen-tiny-btn diary-gen-tiny-btn--delete"
                     onClick={() => handleDeleteFromHistory(h.id)}>
-                    🗑️ Borrar
+                    🗑️ Delete
                   </button>
                 </div>
               </div>
@@ -354,8 +345,6 @@ export default function DiaryGenerator({ entries, artworks = [] }) {
           </div>
         </section>
       )}
-
-      {/* pdf is generated via jsPDF drawing API — no hidden DOM needed */}
     </div>
   )
 }

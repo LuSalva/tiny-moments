@@ -1,19 +1,19 @@
 import { useState, useRef } from 'react'
 
 const TYPES = [
-  { value: 'frase',    emoji: '💬', label: 'Frase' },
-  { value: 'creacion', emoji: '🎨', label: 'Creación' },
-  { value: 'foto',     emoji: '📸', label: 'Foto' },
-  { value: 'hito',     emoji: '🌟', label: 'Hito' },
-  { value: 'cancion',  emoji: '🎵', label: 'Canción' },
-  { value: 'recuerdo', emoji: '💛', label: 'Recuerdo' },
+  { value: 'frase',    emoji: '💬', label: 'Quote' },
+  { value: 'creacion', emoji: '🎨', label: 'Creation' },
+  { value: 'foto',     emoji: '📸', label: 'Photo' },
+  { value: 'hito',     emoji: '🌟', label: 'Milestone' },
+  { value: 'cancion',  emoji: '🎵', label: 'Song' },
+  { value: 'recuerdo', emoji: '💛', label: 'Memory' },
 ]
 
 const LOCATIONS = [
   { value: 'home',        label: '🏠 Home' },
   { value: 'de-heiacker', label: '🏫 De Heiacker' },
   { value: 'veldhoven',   label: '📍 Veldhoven' },
-  { value: 'other',       label: '✏️ Otro' },
+  { value: 'other',       label: '✏️ Other' },
 ]
 
 const MAX_WIDTH = 800
@@ -49,7 +49,6 @@ const KNOWN_LOCATIONS = ['home', 'de-heiacker', 'veldhoven']
 export default function EntryForm({ onSave, onCancel, initialEntry }) {
   const isEditing = Boolean(initialEntry)
 
-  // Derive initial location field state from stored value
   const initLocation = initialEntry?.location ?? 'home'
   const initIsOther  = initLocation && !KNOWN_LOCATIONS.includes(initLocation)
 
@@ -70,12 +69,10 @@ export default function EntryForm({ onSave, onCancel, initialEntry }) {
   const cameraRef  = useRef(null)
   const galleryRef = useRef(null)
 
-  // Photo upload is only relevant for these types
   const showPhotoUpload = type === 'foto' || type === 'creacion'
 
   function handleTypeChange(newType) {
     setType(newType)
-    // Clear photo when switching to a type that doesn't support it
     if (newType !== 'foto' && newType !== 'creacion') {
       setPhoto(null)
       setPhotoPreview(null)
@@ -85,7 +82,6 @@ export default function EntryForm({ onSave, onCancel, initialEntry }) {
   async function handlePhotoChange(e) {
     const file = e.target.files[0]
     if (!file) return
-    // Reset input so the same file can be re-selected after clearing
     e.target.value = ''
     const compressed = await compressImage(file)
     setPhoto(compressed)
@@ -113,8 +109,8 @@ export default function EntryForm({ onSave, onCancel, initialEntry }) {
 
   function validate() {
     const errs = {}
-    if (!title.trim()) errs.title = 'El título es obligatorio'
-    if (!date) errs.date = 'La fecha es obligatoria'
+    if (!title.trim()) errs.title = 'Title is required'
+    if (!date) errs.date = 'Date is required'
     return errs
   }
 
@@ -127,7 +123,7 @@ export default function EntryForm({ onSave, onCancel, initialEntry }) {
     }
     setSaving(true)
     try {
-      const locationValue = location === 'other' ? locationOther.trim() || 'Otro' : location
+      const locationValue = location === 'other' ? locationOther.trim() || 'Other' : location
       await onSave({
         title: title.trim(),
         type,
@@ -138,7 +134,7 @@ export default function EntryForm({ onSave, onCancel, initialEntry }) {
         people,
       })
     } catch (err) {
-      setSaveError(err.message || 'No se pudo guardar. Por favor, inténtalo de nuevo.')
+      setSaveError(err.message || 'Could not save. Please try again.')
       setSaving(false)
     }
   }
@@ -146,17 +142,17 @@ export default function EntryForm({ onSave, onCancel, initialEntry }) {
   return (
     <form className="entry-form" onSubmit={e => e.preventDefault()}>
       <div className="form-header">
-        <button type="button" className="back-button" onClick={onCancel}>← Volver</button>
-        <h2>{isEditing ? 'Editar recuerdo' : 'Nuevo recuerdo'}</h2>
+        <button type="button" className="back-button" onClick={onCancel}>← Back</button>
+        <h2>{isEditing ? 'Edit memory' : 'New memory'}</h2>
       </div>
 
       {/* Title */}
       <div className="field">
-        <label htmlFor="title">Título *</label>
+        <label htmlFor="title">Title *</label>
         <input
           id="title"
           type="text"
-          placeholder="¿Qué pasó?"
+          placeholder="What happened?"
           value={title}
           onChange={e => setTitle(e.target.value)}
           className={errors.title ? 'input-error' : ''}
@@ -166,7 +162,7 @@ export default function EntryForm({ onSave, onCancel, initialEntry }) {
 
       {/* Type */}
       <div className="field">
-        <label>Tipo</label>
+        <label>Type</label>
         <div className="type-buttons">
           {TYPES.map(t => (
             <button
@@ -184,10 +180,10 @@ export default function EntryForm({ onSave, onCancel, initialEntry }) {
 
       {/* Note */}
       <div className="field">
-        <label htmlFor="note">Nota</label>
+        <label htmlFor="note">Note</label>
         <textarea
           id="note"
-          placeholder="Escribe los detalles del momento..."
+          placeholder="Write the details of this moment..."
           value={note}
           onChange={e => setNote(e.target.value)}
           rows={4}
@@ -196,7 +192,7 @@ export default function EntryForm({ onSave, onCancel, initialEntry }) {
 
       {/* Date */}
       <div className="field">
-        <label htmlFor="date">Fecha *</label>
+        <label htmlFor="date">Date *</label>
         <input
           id="date"
           type="date"
@@ -207,33 +203,31 @@ export default function EntryForm({ onSave, onCancel, initialEntry }) {
         {errors.date && <span className="error-text">{errors.date}</span>}
       </div>
 
-      {/* Photo — only shown for 📸 Foto and 🎨 Creación */}
+      {/* Photo — only shown for 📸 Photo and 🎨 Creation */}
       {showPhotoUpload && (
         <div className="field">
-          <label>Foto o imagen</label>
+          <label>Photo or image</label>
 
-          {/* Preview */}
           {photoPreview && (
             <div className="photo-preview-container" style={{ marginBottom: 10 }}>
-              <img src={photoPreview} alt="Vista previa" className="photo-preview" />
+              <img src={photoPreview} alt="Preview" className="photo-preview" />
             </div>
           )}
 
-          {/* Two upload buttons */}
           <div className="photo-upload-btns">
             <button
               type="button"
               className="photo-upload-btn"
               onClick={() => cameraRef.current?.click()}
             >
-              📷 Sacar foto
+              📷 Take photo
             </button>
             <button
               type="button"
               className="photo-upload-btn"
               onClick={() => galleryRef.current?.click()}
             >
-              🖼️ Elegir de galería
+              🖼️ Choose from gallery
             </button>
             {photoPreview && (
               <button
@@ -241,12 +235,11 @@ export default function EntryForm({ onSave, onCancel, initialEntry }) {
                 className="photo-upload-btn photo-upload-btn--remove"
                 onClick={() => { setPhoto(null); setPhotoPreview(null) }}
               >
-                🗑️ Quitar foto
+                🗑️ Remove photo
               </button>
             )}
           </div>
 
-          {/* Hidden inputs — camera and gallery */}
           <input
             ref={cameraRef}
             type="file"
@@ -267,7 +260,7 @@ export default function EntryForm({ onSave, onCancel, initialEntry }) {
 
       {/* Location */}
       <div className="field">
-        <label>Ubicación</label>
+        <label>Location</label>
         <div className="location-buttons">
           {LOCATIONS.map(loc => (
             <button
@@ -283,7 +276,7 @@ export default function EntryForm({ onSave, onCancel, initialEntry }) {
         {location === 'other' && (
           <input
             type="text"
-            placeholder="¿Dónde fue?"
+            placeholder="Where was it?"
             value={locationOther}
             onChange={e => setLocationOther(e.target.value)}
             className="other-location-input"
@@ -293,11 +286,11 @@ export default function EntryForm({ onSave, onCancel, initialEntry }) {
 
       {/* People */}
       <div className="field">
-        <label>Personas</label>
+        <label>People</label>
         <div className="people-input">
           <input
             type="text"
-            placeholder="Añadir nombre y pulsar Enter"
+            placeholder="Add a name and press Enter"
             value={personInput}
             onChange={e => setPersonInput(e.target.value)}
             onKeyDown={handlePersonKeyDown}
@@ -309,7 +302,7 @@ export default function EntryForm({ onSave, onCancel, initialEntry }) {
             {people.map(p => (
               <span key={p} className="person-tag">
                 {p}
-                <button type="button" onClick={() => removePerson(p)} aria-label={`Quitar ${p}`}>✕</button>
+                <button type="button" onClick={() => removePerson(p)} aria-label={`Remove ${p}`}>✕</button>
               </span>
             ))}
           </div>
@@ -320,15 +313,15 @@ export default function EntryForm({ onSave, onCancel, initialEntry }) {
       {saveError && (
         <div className="error-banner" role="alert">
           <span>⚠️ {saveError}</span>
-          <button type="button" onClick={() => setSaveError(null)} aria-label="Cerrar">✕</button>
+          <button type="button" onClick={() => setSaveError(null)} aria-label="Close">✕</button>
         </div>
       )}
 
       {/* Actions */}
       <div className="form-actions">
-        <button type="button" className="btn-cancel" onClick={onCancel}>Cancelar</button>
+        <button type="button" className="btn-cancel" onClick={onCancel}>Cancel</button>
         <button type="button" className="btn-save" disabled={saving} onClick={handleSave}>
-          {saving ? 'Guardando...' : isEditing ? '💾 Guardar cambios' : '💾 Guardar recuerdo'}
+          {saving ? 'Saving...' : isEditing ? '💾 Save changes' : '💾 Save memory'}
         </button>
       </div>
     </form>
