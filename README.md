@@ -1,16 +1,74 @@
-# React + Vite
+# 🌱 Tiny Moments
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+**A family memory keeper — built with AI, shipped in a weekend.**
 
-Currently, two official plugins are available:
+[**→ Try the live app**](https://tiny-moments-five.vercel.app) · Demo login: `demo@tinymoments.app` / `TinyDemo2024`
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+---
 
-## React Compiler
+## What is this?
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+Tiny Moments is a private web app for parents who want to capture the small things that don't make it into a photo album — a funny quote, a first word, a drawing that will inevitably end up in the bin.
 
-## Expanding the ESLint configuration
+You can log memories and artworks, add photos, filter by person or date, and generate a printable PDF diary at the end of the year.
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+The demo is pre-loaded with fictional memories from **Lena**, a 4-year-old who loves puddles, Frozen, and building cushion forts.
+
+---
+
+## How I built it
+
+This project started at a workshop by **[Women in AIndhoven](https://www.linkedin.com/company/women-in-ainhoven/)** — a community for women in AI and tech enthusiasts in Eindhoven. The workshop, facilitated by **Bea Waelbers** and **Wanda Kruijt**, brought together 13 women who — in 3 hours — each built a fully functional app using AI. No prior coding required.
+
+The premise: you don't need to write code. You need clarity about what you want to build.
+
+I kept going after the workshop. This is the result.
+
+The entire app was built using **vibe coding** — describing what I wanted in plain language and working with Claude (Anthropic's AI) to implement it step by step. I made decisions about features, design, and data. Claude wrote the code.
+
+---
+
+## What's under the hood
+
+| Layer | Tool |
+|---|---|
+| Frontend | React + Vite |
+| Backend & database | Supabase (PostgreSQL) |
+| Auth | Supabase Auth |
+| Hosting | Vercel |
+| PDF generation | jsPDF |
+| Data protection | Row Level Security (RLS) |
+
+Photos are stored as compressed base64 in the database — no public URLs, protected by RLS policies. Built with privacy in mind from the start.
+
+---
+
+## Features
+
+- Log memories by type: quote, photo, milestone, song, creation, memory
+- Art gallery tab for drawings and crafts
+- Add photos from camera or gallery
+- Filter memories by person
+- Generate a printable PDF diary (memories or art gallery)
+- Multi-user: each family member logs in separately
+- PWA-ready: works on mobile, can be installed as an app
+
+---
+
+## About the community
+
+**Women in AIndhoven** is a community connecting women in AI and enthusiasts in the Eindhoven region — to learn, build, and grow together. Their masterclass series shows that building with AI is about clarity and vision, not coding skills.
+
+> *"Building with AI isn't about coding skills. It's about clarity, preparation, and the willingness to trust the process."*
+
+Find them on [LinkedIn](https://www.linkedin.com/company/women-in-ainhoven/) and look out for their next masterclass.
+
+---
+
+## Want to run it yourself?
+
+You'd need your own Supabase project with the entries, artworks, and profiles tables, and your own Vercel deployment. Feel free to reach out if you want to know more.
+
+---
+
+*Built by [Luciana Salvagni](https://github.com/LuSalva) · Eindhoven, 2025*
