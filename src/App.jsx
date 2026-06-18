@@ -172,11 +172,7 @@ function AppShell({ signOut }) {
         )
       )
     : entries
-  ).slice().sort((a, b) => {
-    if (a.favourite && !b.favourite) return -1
-    if (!a.favourite && b.favourite) return 1
-    return new Date(b.date) - new Date(a.date)
-  })
+  ).slice().sort((a, b) => new Date(b.date) - new Date(a.date))
 
   if (showForm) {
     return (
