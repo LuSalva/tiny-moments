@@ -57,11 +57,15 @@ Photos are stored as compressed base64 in the database — no public URLs, prote
 
 ## About the community
 
-**Women in AIndhoven** is a community connecting women in AI and enthusiasts in the Eindhoven region — to learn, build, and grow together. Their masterclass series shows that building with AI is about clarity and vision, not coding skills.
+**[Women in AIndhoven](https://www.linkedin.com/company/women-in-aindhoven/)** is a community for women working or interested in AI in the Brainport Eindhoven region. Founded by Meike Nauta, Mariana Goldak-Altgassen and Andrea van den Boogaard, they organize bi-monthly events at the AI Innovation Center in Eindhoven.
+
+Their mission: inspire and provide women with the knowledge, confidence, and community they need to thrive in the AI world.
 
 > *"Building with AI isn't about coding skills. It's about clarity, preparation, and the willingness to trust the process."*
 
-Find them on [LinkedIn](https://www.linkedin.com/company/women-in-aindhoven/) and look out for their next masterclass.
+The vibe coding masterclass was led by **Wanda Kruijt**, with the full Women in AIndhoven team. 13 women, 3 hours, 13 fully functional apps.
+
+Follow them on [LinkedIn](https://www.linkedin.com/company/women-in-aindhoven/) to find out about their next event.
 
 ---
 
