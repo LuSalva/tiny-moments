@@ -71,4 +71,4 @@ You'd need your own Supabase project with the entries, artworks, and profiles ta
 
 ---
 
-*Built by [Luciana Salvagni](https://github.com/LuSalva) · Eindhoven, 2025*
+*Built by [Luciana Salvagni](https://www.linkedin.com/in/lucianasalvagni/) · Eindhoven, 2025*

@@ -3,7 +3,7 @@ import { useEffect, useRef, useState, useCallback } from 'react'
 const TIMEOUT_MS  = 60 * 60 * 1000   // 60 minutes
 const WARN_MS     = 55 * 60 * 1000   // warn at 55 minutes (5 min before)
 const CHECK_MS    = 30_000            // check every 30 seconds
-const LS_KEY      = 'abrazo-familiar-last-activity'
+const LS_KEY      = 'tiny-moments-last-activity'
 
 // Activity events that reset the timer
 const ACTIVITY_EVENTS = ['click', 'keydown', 'scroll', 'touchstart']

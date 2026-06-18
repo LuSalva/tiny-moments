@@ -121,7 +121,7 @@ export async function deleteItem(id) {
 }
 
 // ─── Migration helper (localStorage → Supabase) ──────────────────────────────
-const LS_KEY = 'abrazo-familiar-entries'
+const LS_KEY = 'tiny-moments-entries'
 
 export function getLocalItems() {
   try {
