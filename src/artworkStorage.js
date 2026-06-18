@@ -54,7 +54,10 @@ export async function addArtwork(item) {
     .select()
     .single()
 
-  if (error) throw new Error('No se pudo guardar la obra. Por favor, inténtalo de nuevo.')
+  if (error) {
+    console.error('[artworkStorage] addArtwork failed:', error)
+    throw new Error('No se pudo guardar la obra. Por favor, inténtalo de nuevo.')
+  }
   return fromRow(data)
 }
 

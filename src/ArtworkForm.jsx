@@ -16,8 +16,8 @@ const LOCATIONS = [
 
 const KNOWN_LOCATIONS = ['home', 'de-heiacker', 'veldhoven']
 
-const MAX_WIDTH = 1200
-const JPEG_QUALITY = 0.8
+const MAX_WIDTH = 800
+const JPEG_QUALITY = 0.7
 
 function compressImage(file) {
   return new Promise((resolve, reject) => {
