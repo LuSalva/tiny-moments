@@ -9,7 +9,7 @@ const TECHNIQUES = [
 
 const LOCATIONS = [
   { value: 'home',         label: '🏠 Home' },
-  { value: 'de-heiacker',  label: '🏫 De Heiacker' },
+  { value: 'de-heiacker',  label: '🏫 School' },
   { value: 'veldhoven',    label: '📍 Veldhoven' },
   { value: 'other',        label: '✏️ Other' },
 ]

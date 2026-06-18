@@ -57,8 +57,9 @@ function fmt(d) {
 
 function locTxt(l) {
   if (!l) return null
-  if (l === 'home')      return 'Home'
-  if (l === 'veldhoven') return 'Veldhoven'
+  if (l === 'home')        return 'Home'
+  if (l === 'veldhoven')  return 'Veldhoven'
+  if (l === 'de-heiacker') return 'School'
   return l
 }
 

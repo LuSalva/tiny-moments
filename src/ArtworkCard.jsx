@@ -16,7 +16,7 @@ const TECHNIQUE_COLORS = {
 
 const LOCATION_LABELS = {
   'home':        '🏠 Home',
-  'de-heiacker': '🏫 De Heiacker',
+  'de-heiacker': '🏫 School',
   'veldhoven':   '📍 Veldhoven',
 }
 
