@@ -18,7 +18,7 @@ The demo is pre-loaded with fictional memories from **Lena**, a 4-year-old who l
 
 ## How I built it
 
-This project started at a workshop by **[Women in AIndhoven](https://www.linkedin.com/company/women-in-ainhoven/)** — a community for women in AI and tech enthusiasts in Eindhoven. The workshop, facilitated by **Bea Waelbers** and **Wanda Kruijt**, brought together 13 women who — in 3 hours — each built a fully functional app using AI. No prior coding required.
+This project started at a workshop by **[Women in AIndhoven](https://www.linkedin.com/company/women-in-aindhoven/)** — a community for women in AI and tech enthusiasts in Eindhoven. The workshop, facilitated by **Bea Waelbers** and **Wanda Kruijt**, brought together 13 women who — in 3 hours — each built a fully functional app using AI. No prior coding required.
 
 The premise: you don't need to write code. You need clarity about what you want to build.
 
@@ -61,7 +61,7 @@ Photos are stored as compressed base64 in the database — no public URLs, prote
 
 > *"Building with AI isn't about coding skills. It's about clarity, preparation, and the willingness to trust the process."*
 
-Find them on [LinkedIn](https://www.linkedin.com/company/women-in-ainhoven/) and look out for their next masterclass.
+Find them on [LinkedIn](https://www.linkedin.com/company/women-in-aindhoven/) and look out for their next masterclass.
 
 ---
 
