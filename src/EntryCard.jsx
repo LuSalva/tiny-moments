@@ -82,14 +82,6 @@ export default function EntryCard({
           {canEdit && (
             <>
               <button
-                className={`fav-btn${entry.favourite ? ' fav-btn--active' : ''}`}
-                onClick={() => onToggle(entry.id)}
-                title="Mark as favourite"
-                aria-label="Favourite"
-              >
-                {entry.favourite ? '❤️' : '🤍'}
-              </button>
-              <button
                 className="edit-btn"
                 onClick={() => onEdit(entry)}
                 title="Edit"
