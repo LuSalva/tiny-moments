@@ -309,7 +309,7 @@ function AppShell({ signOut }) {
           </>
         ) : activeTab === 'pdf' ? (
           <Suspense fallback={<div className="loading">Cargando generador… 💛</div>}>
-            <DiaryGenerator entries={entries} />
+            <DiaryGenerator entries={entries} artworks={artworks} />
           </Suspense>
         ) : (
           <>

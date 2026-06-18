@@ -323,6 +323,142 @@ function packIntoPages(entries) {
   return pages
 }
 
+// ─── Artwork block drawing ────────────────────────────────────────────────────
+
+const TECHNIQUE_ACCENT = {
+  dibujo:     [253, 243, 150],
+  pintura:    [183, 232, 222],
+  manualidad: [255, 211, 217],
+  otro:       [221, 211, 247],
+}
+
+const TECHNIQUE_LABEL = {
+  dibujo: 'Dibujo', pintura: 'Pintura', manualidad: 'Manualidad', otro: 'Otro',
+}
+
+const ARTWORK_LOCATION_LABELS = {
+  'home':        'Home',
+  'de-heiacker': 'De Heiacker',
+  'veldhoven':   'Veldhoven',
+}
+
+function artLocText(l) {
+  if (!l) return null
+  return ARTWORK_LOCATION_LABELS[l] || l
+}
+
+async function drawArtworkPhotoBlock(pdf, artwork, yMm) {
+  const bh = BH_LARGE * 1.5  // 3/8 page — more room for the image
+
+  const [r, g, b] = TECHNIQUE_ACCENT[artwork.technique] || TECHNIQUE_ACCENT.otro
+  pdf.setFillColor(255, 255, 255)
+  pdf.rect(0, yMm, W, bh, 'F')
+  pdf.setFillColor(r, g, b)
+  pdf.rect(0, yMm, 4, bh, 'F')
+
+  const PAD_V = 7
+  const IMG_SZ = bh - PAD_V * 2
+  const IMG_X = 7
+  const IMG_Y = yMm + PAD_V
+
+  pdf.setFillColor(238, 238, 238)
+  pdf.rect(IMG_X, IMG_Y, IMG_SZ, IMG_SZ, 'F')
+
+  if (artwork.photo) {
+    const img = await loadImage(artwork.photo)
+    if (img) {
+      const { w: dw, h: dh } = fitContain(img.w, img.h, IMG_SZ, IMG_SZ)
+      const ox = (IMG_SZ - dw) / 2
+      const oy = (IMG_SZ - dh) / 2
+      pdf.addImage(img.data, 'JPEG', IMG_X + ox, IMG_Y + oy, dw, dh)
+    }
+  }
+
+  const TX = IMG_X + IMG_SZ + 5
+  const TW = W - TX - PAD
+  let curY = yMm + PAD_V + 5
+
+  const techLabel = TECHNIQUE_LABEL[artwork.technique] || ''
+  pdf.setFont('helvetica', 'bold')
+  pdf.setFontSize(11)
+  pdf.setTextColor(...hex('#2c2520'))
+  pdf.text(artwork.title, TX, curY)
+  curY += 7
+
+  txt(pdf, techLabel, TX, curY, { size: 8, color: '#9b8ca8', style: 'italic' })
+  curY += 6
+
+  if (artwork.note) {
+    const note = artwork.note.length > 200 ? artwork.note.slice(0, 200) + '…' : artwork.note
+    pdf.setFont('helvetica', 'normal')
+    pdf.setFontSize(8)
+    pdf.setTextColor(...hex('#5a4a3a'))
+    const lines = pdf.splitTextToSize(note, TW)
+    pdf.text(lines.slice(0, 4), TX, curY)
+  }
+
+  const meta = [artwork.uploadedByName, fmtDate(artwork.date), artLocText(artwork.location)]
+    .filter(Boolean).join('  ·  ')
+  if (meta) txt(pdf, meta, TX, yMm + bh - PAD_V, { size: 7, color: '#aaaaaa' })
+
+  drawSep(pdf, yMm + bh)
+  return bh
+}
+
+function drawArtworkTextBlock(pdf, artwork, yMm) {
+  const bh = BH_SMALL
+  const [r, g, b] = TECHNIQUE_ACCENT[artwork.technique] || TECHNIQUE_ACCENT.otro
+  pdf.setFillColor(253, 250, 245)
+  pdf.rect(0, yMm, W, bh, 'F')
+  pdf.setFillColor(r, g, b)
+  pdf.rect(0, yMm, 4, bh, 'F')
+
+  const TX = 10, TW = W - TX - PAD
+  const techLabel = TECHNIQUE_LABEL[artwork.technique] || ''
+
+  pdf.setFont('helvetica', 'bold')
+  pdf.setFontSize(10.5)
+  pdf.setTextColor(...hex('#2c2520'))
+  pdf.text(`${techLabel}  ${artwork.title}`, TX, yMm + 11)
+
+  if (artwork.note) {
+    const note = artwork.note.length > 140 ? artwork.note.slice(0, 140) + '…' : artwork.note
+    pdf.setFont('helvetica', 'normal')
+    pdf.setFontSize(8.5)
+    pdf.setTextColor(...hex('#5a4a3a'))
+    const lines = pdf.splitTextToSize(note, TW)
+    pdf.text(lines.slice(0, 2), TX, yMm + 19)
+  }
+
+  const meta = [artwork.uploadedByName, fmtDate(artwork.date), artLocText(artwork.location)]
+    .filter(Boolean).join('  ·  ')
+  if (meta) txt(pdf, meta, TX, yMm + bh - 5, { size: 7, color: '#aaaaaa' })
+
+  drawSep(pdf, yMm + bh)
+  return bh
+}
+
+function packArtworksIntoPages(artworks) {
+  const BH_ART_LARGE = BH_LARGE * 1.5
+  const blocks = [
+    { kind: 'cover', height: BH_LARGE },
+    ...artworks.map(a => ({
+      kind:   a.photo ? 'art-photo' : 'art-text',
+      entry:  a,
+      height: a.photo ? BH_ART_LARGE : BH_SMALL,
+    })),
+  ]
+  const pages = []
+  let page = [], remaining = H
+  for (const block of blocks) {
+    if (block.height > remaining + 0.01) { pages.push(page); page = []; remaining = H }
+    page.push({ ...block, yMm: H - remaining })
+    remaining -= block.height
+  }
+  if (page.length > 0) pages.push(page)
+  return pages
+}
+
 // ─── Public API ───────────────────────────────────────────────────────────────
 export function compactPages(entries) {
   const pages = packIntoPages(entries)
@@ -360,5 +496,33 @@ export async function buildPdf(entries, onProgress) {
     onProgress?.(Math.round(((i + 1) / pages.length) * 100))
   }
 
+  return pdf
+}
+
+export function compactArtworkPages(artworks) {
+  const BH_ART_LARGE = BH_LARGE * 1.5
+  const PX_PER_MM = 794 / 210
+  const pages = packArtworksIntoPages(artworks)
+  return pages.map(page =>
+    page.map(block => ({ ...block, yPx: block.yMm * PX_PER_MM }))
+  )
+}
+
+export async function buildArtworkPdf(artworks, onProgress) {
+  const pdf   = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
+  const pages = packArtworksIntoPages(artworks)
+
+  for (let i = 0; i < pages.length; i++) {
+    if (i > 0) pdf.addPage()
+    pdf.setFillColor(253, 250, 245)
+    pdf.rect(0, 0, W, H, 'F')
+
+    for (const block of pages[i]) {
+      if      (block.kind === 'cover')     drawCoverBlock(pdf, block.yMm, artworks)
+      else if (block.kind === 'art-photo') await drawArtworkPhotoBlock(pdf, block.entry, block.yMm)
+      else                                 drawArtworkTextBlock(pdf, block.entry, block.yMm)
+    }
+    onProgress?.(Math.round(((i + 1) / pages.length) * 100))
+  }
   return pdf
 }

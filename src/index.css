@@ -32,6 +32,31 @@
 /* ─── Diary Generator ────────────────────────────────── */
 .diary-gen { padding: 0 0 48px; }
 
+.diary-gen-mode-toggle {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.diary-gen-mode-btn {
+  flex: 1;
+  padding: 10px 16px;
+  border-radius: 12px;
+  border: 2px solid #e8e0f0;
+  background: white;
+  color: #7c6b8a;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.18s;
+}
+
+.diary-gen-mode-btn--active {
+  border-color: #c084fc;
+  background: #f5edff;
+  color: #7c3aed;
+}
+
 .diary-gen-section {
   background: white;
   border-radius: 16px;

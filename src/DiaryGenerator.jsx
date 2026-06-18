@@ -1,13 +1,6 @@
 import { useState } from 'react'
-/* Cambio hecho con Chat GPT: se eliminan las páginas específicas 
-(CoverPage, PhotoPage, TextPage) y se reemplazan por una única 
-CompactPage que maneja todos los tipos de entrada. 
-También se ajusta la función composePages para generar solo páginas 
-compactas, simplificando el proceso de generación del PDF.
-import { CoverPage, PhotoPage, TextPage, PAGE_W, PAGE_H } from './DiaryPages'
-import { buildPdf } from './pdfUtils'*/
 import { CompactPage, PAGE_W, PAGE_H } from './DiaryPages'
-import { buildPdf, compactPages } from './pdfUtils'
+import { buildPdf, compactPages, buildArtworkPdf, compactArtworkPages } from './pdfUtils'
 
 
 const PREVIEW_SCALE = 0.22
@@ -45,16 +38,26 @@ function fmtDate(d) {
 
 
 
-export default function DiaryGenerator({ entries }) {
+const TECHNIQUE_LABELS = {
+  dibujo:     '✏️ Dibujo',
+  pintura:    '🎨 Pintura',
+  manualidad: '✂️ Manualidad',
+  otro:       '🌟 Otro',
+}
+const ALL_TECHNIQUES = ['dibujo', 'pintura', 'manualidad', 'otro']
+
+export default function DiaryGenerator({ entries, artworks = [] }) {
+  const [mode,           setMode]           = useState('recuerdos') // 'recuerdos' | 'arte'
   const [dateFrom,       setDateFrom]       = useState('')
   const [dateTo,         setDateTo]         = useState('')
   const [selectedTypes,  setSelectedTypes]  = useState(new Set(ALL_TYPES))
+  const [selectedTechs,  setSelectedTechs]  = useState(new Set(ALL_TECHNIQUES))
   const [pages,          setPages]          = useState([])
   const [generating,     setGenerating]     = useState(false)
   const [progress,       setProgress]       = useState(0)
   const [history,        setHistory]        = useState(loadHistory)
 
-  // ── Filtered entries (sorted by date ascending) ───────────────────────────
+  // ── Filtered entries/artworks (sorted by date ascending) ─────────────────
   const filtered = entries
     .filter(e => {
       if (dateFrom && e.date < dateFrom) return false
@@ -62,6 +65,16 @@ export default function DiaryGenerator({ entries }) {
       return selectedTypes.has(e.type)
     })
     .sort((a, b) => (a.date ?? '').localeCompare(b.date ?? ''))
+
+  const filteredArt = artworks
+    .filter(a => {
+      if (dateFrom && a.date < dateFrom) return false
+      if (dateTo   && a.date > dateTo)   return false
+      return selectedTechs.has(a.technique)
+    })
+    .sort((a, b) => (a.date ?? '').localeCompare(b.date ?? ''))
+
+  const activeFiltered = mode === 'arte' ? filteredArt : filtered
 
   // ── Filters helpers ───────────────────────────────────────────────────────
   function toggleType(t) {
@@ -73,21 +86,43 @@ export default function DiaryGenerator({ entries }) {
     setPages([])
   }
 
+  function toggleTech(t) {
+    setSelectedTechs(prev => {
+      const n = new Set(prev)
+      n.has(t) ? n.delete(t) : n.add(t)
+      return n
+    })
+    setPages([])
+  }
+
+  function handleModeChange(newMode) {
+    setMode(newMode)
+    setPages([])
+    setDateFrom('')
+    setDateTo('')
+  }
+
   // ── Actions ───────────────────────────────────────────────────────────────
   /*Cambio hecho con Chat GPT
   function handlePreview() {
     setPages(composePages(filtered))
   }*/
   function handlePreview() {
-  setPages(compactPages(filtered))
+    if (mode === 'arte') setPages(compactArtworkPages(filteredArt))
+    else                 setPages(compactPages(filtered))
   }
 
   async function handleDownload() {
     setGenerating(true)
     setProgress(0)
     try {
-      const pdf = await buildPdf(filtered, setProgress)
-      const filename = `diario-ella-${new Date().toISOString().slice(0, 10)}.pdf`
+      const date = new Date().toISOString().slice(0, 10)
+      const pdf = mode === 'arte'
+        ? await buildArtworkPdf(filteredArt, setProgress)
+        : await buildPdf(filtered, setProgress)
+      const filename = mode === 'arte'
+        ? `galeria-arte-ella-${date}.pdf`
+        : `diario-ella-${date}.pdf`
       pdf.save(filename)
     } catch (err) {
       console.error('PDF generation failed:', err)
@@ -132,14 +167,32 @@ export default function DiaryGenerator({ entries }) {
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
-  const estimatedPages = filtered.length ? compactPages(filtered).length : 0
+  const estimatedPages = mode === 'arte'
+    ? (filteredArt.length ? compactArtworkPages(filteredArt).length : 0)
+    : (filtered.length    ? compactPages(filtered).length           : 0)
 
   return (
     <div className="diary-gen">
 
       {/* ── Filters ──────────────────────────────────────────────────── */}
       <section className="diary-gen-section">
-        <h2 className="diary-gen-title">📄 Generar diario</h2>
+        <h2 className="diary-gen-title">📄 Generar PDF</h2>
+
+        {/* Mode toggle */}
+        <div className="diary-gen-mode-toggle">
+          <button
+            className={`diary-gen-mode-btn${mode === 'recuerdos' ? ' diary-gen-mode-btn--active' : ''}`}
+            onClick={() => handleModeChange('recuerdos')}
+          >
+            📔 Recuerdos
+          </button>
+          <button
+            className={`diary-gen-mode-btn${mode === 'arte' ? ' diary-gen-mode-btn--active' : ''}`}
+            onClick={() => handleModeChange('arte')}
+          >
+            🎨 Galería de Arte
+          </button>
+        </div>
 
         <div className="diary-gen-filters">
           {/* Date range */}
@@ -156,33 +209,64 @@ export default function DiaryGenerator({ entries }) {
             </div>
           </div>
 
-          {/* Type filter */}
-          <div>
-            <div className="diary-gen-type-header">
-              <span>Tipos de recuerdo</span>
-              <button className="diary-gen-tiny-btn"
-                onClick={() => { setSelectedTypes(new Set(ALL_TYPES)); setPages([]) }}>
-                Seleccionar todo
-              </button>
-              <button className="diary-gen-tiny-btn"
-                onClick={() => { setSelectedTypes(new Set()); setPages([]) }}>
-                Deseleccionar todo
-              </button>
+          {/* Type filter — recuerdos */}
+          {mode === 'recuerdos' && (
+            <div>
+              <div className="diary-gen-type-header">
+                <span>Tipos de recuerdo</span>
+                <button className="diary-gen-tiny-btn"
+                  onClick={() => { setSelectedTypes(new Set(ALL_TYPES)); setPages([]) }}>
+                  Seleccionar todo
+                </button>
+                <button className="diary-gen-tiny-btn"
+                  onClick={() => { setSelectedTypes(new Set()); setPages([]) }}>
+                  Deseleccionar todo
+                </button>
+              </div>
+              <div className="diary-gen-type-checks">
+                {ALL_TYPES.map(t => (
+                  <label key={t} className="diary-gen-check">
+                    <input type="checkbox" checked={selectedTypes.has(t)}
+                      onChange={() => toggleType(t)} />
+                    {TYPE_LABELS[t]}
+                  </label>
+                ))}
+              </div>
             </div>
-            <div className="diary-gen-type-checks">
-              {ALL_TYPES.map(t => (
-                <label key={t} className="diary-gen-check">
-                  <input type="checkbox" checked={selectedTypes.has(t)}
-                    onChange={() => toggleType(t)} />
-                  {TYPE_LABELS[t]}
-                </label>
-              ))}
+          )}
+
+          {/* Technique filter — arte */}
+          {mode === 'arte' && (
+            <div>
+              <div className="diary-gen-type-header">
+                <span>Técnicas</span>
+                <button className="diary-gen-tiny-btn"
+                  onClick={() => { setSelectedTechs(new Set(ALL_TECHNIQUES)); setPages([]) }}>
+                  Seleccionar todo
+                </button>
+                <button className="diary-gen-tiny-btn"
+                  onClick={() => { setSelectedTechs(new Set()); setPages([]) }}>
+                  Deseleccionar todo
+                </button>
+              </div>
+              <div className="diary-gen-type-checks">
+                {ALL_TECHNIQUES.map(t => (
+                  <label key={t} className="diary-gen-check">
+                    <input type="checkbox" checked={selectedTechs.has(t)}
+                      onChange={() => toggleTech(t)} />
+                    {TECHNIQUE_LABELS[t]}
+                  </label>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
         <p className="diary-gen-summary">
-          {filtered.length} recuerdo{filtered.length !== 1 ? 's' : ''} seleccionado{filtered.length !== 1 ? 's' : ''}
+          {mode === 'arte'
+            ? `${filteredArt.length} obra${filteredArt.length !== 1 ? 's' : ''} seleccionada${filteredArt.length !== 1 ? 's' : ''}`
+            : `${filtered.length} recuerdo${filtered.length !== 1 ? 's' : ''} seleccionado${filtered.length !== 1 ? 's' : ''}`
+          }
           {estimatedPages > 0 && ` · ${estimatedPages} páginas aprox.`}
         </p>
 
@@ -191,7 +275,7 @@ export default function DiaryGenerator({ entries }) {
         )}
 
         <button className="diary-gen-preview-btn" onClick={handlePreview}
-          disabled={filtered.length === 0 || (!dateFrom && !dateTo)}>
+          disabled={activeFiltered.length === 0 || (!dateFrom && !dateTo)}>
           👁️ Generar vista previa
         </button>
       </section>
