@@ -112,8 +112,8 @@ export default function DiaryGenerator({ entries, artworks = [] }) {
         ? await buildArtworkPdf(filteredArt, setProgress)
         : await buildPdf(filtered, setProgress)
       const filename = mode === 'arte'
-        ? `art-gallery-mia-${date}.pdf`
-        : `diary-mia-${date}.pdf`
+        ? `art-gallery-lena-${date}.pdf`
+        : `diary-lena-${date}.pdf`
       pdf.save(filename)
     } catch (err) {
       console.error('PDF generation failed:', err)
@@ -284,7 +284,7 @@ export default function DiaryGenerator({ entries, artworks = [] }) {
                   <div style={{ width: PAGE_W, height: PAGE_H,
                     transform: `scale(${PREVIEW_SCALE})`, transformOrigin: 'top left',
                     pointerEvents: 'none' }}>
-                    <CompactPage blocks={page} allEntries={filtered} />
+                    <CompactPage blocks={page} allEntries={mode === 'arte' ? filteredArt : filtered} mode={mode} />
                   </div>
                 </div>
                 <div className="pdf-preview-thumb-num">p. {i + 1}</div>

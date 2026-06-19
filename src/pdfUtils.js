@@ -129,7 +129,7 @@ function drawSep(pdf, yMm) {
 }
 
 /** Cover block — 1/4 page. */
-function drawCoverBlock(pdf, yMm, entries) {
+function drawCoverBlock(pdf, yMm, entries, title = "Lena's Diary") {
   const bh = BH_LARGE
 
   // Background — slightly warmer cream
@@ -147,7 +147,7 @@ function drawCoverBlock(pdf, yMm, entries) {
   const tx = 10   // text start x (right of bar + gap)
 
   // Title — two lines for visual weight
-  txt(pdf, 'El diario de Ella', tx, yMm + 20,
+  txt(pdf, title, tx, yMm + 20,
     { style:'bold', size:24, color:'#2c2520' })
 
   if (range) {
@@ -518,7 +518,7 @@ export async function buildArtworkPdf(artworks, onProgress) {
     pdf.rect(0, 0, W, H, 'F')
 
     for (const block of pages[i]) {
-      if      (block.kind === 'cover')     drawCoverBlock(pdf, block.yMm, artworks)
+      if      (block.kind === 'cover')     drawCoverBlock(pdf, block.yMm, artworks, "Lena's Art")
       else if (block.kind === 'art-photo') await drawArtworkPhotoBlock(pdf, block.entry, block.yMm)
       else                                 drawArtworkTextBlock(pdf, block.entry, block.yMm)
     }

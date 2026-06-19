@@ -48,6 +48,17 @@ const TYPE_LABEL = {
   hito:'Milestone', cancion:'Song', recuerdo:'Memory',
 }
 
+const TECHNIQUE_ACCENT = {
+  dibujo:     'rgb(198,224,255)',
+  pintura:    'rgb(255,198,210)',
+  manualidad: 'rgb(198,255,218)',
+  otro:       'rgb(240,236,250)',
+}
+
+const TECHNIQUE_LABEL = {
+  dibujo:'Drawing', pintura:'Painting', manualidad:'Craft', otro:'Other',
+}
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function fmt(d) {
   if (!d) return ''
@@ -100,7 +111,7 @@ function Sep({ blockH }) {
 }
 
 // ─── Cover block ──────────────────────────────────────────────────────────────
-function CoverBlock({ yPx, allEntries }) {
+function CoverBlock({ yPx, allEntries, mode }) {
   const bh = BH_LARGE
   const tx = ACCENT_W + 23    // text x-start
   const tw = PAGE_W - tx - H_PAD
@@ -136,7 +147,7 @@ function CoverBlock({ yPx, allEntries }) {
         color:'#2c2520', lineHeight:1.15,
         whiteSpace:'nowrap', overflow:'hidden',
       }}>
-        Mia's Diary
+        {mode === 'arte' ? "Lena's Art" : "Lena's Diary"}
       </div>
 
       {/* Date range */}
@@ -348,15 +359,172 @@ function TextBlock({ yPx, entry }) {
   )
 }
 
+// ─── Artwork photo block ──────────────────────────────────────────────────────
+function ArtworkPhotoBlock({ yPx, artwork }) {
+  const bh    = BH_LARGE * 1.5
+  const imgSz = bh - V_PAD * 2
+  const imgX  = ACCENT_W + 11
+  const tx    = imgX + imgSz + 19
+  const tw    = PAGE_W - tx - H_PAD
+
+  const note = artwork.note
+    ? (artwork.note.length > 200 ? artwork.note.slice(0,200) + '…' : artwork.note)
+    : ''
+
+  const techLabel = TECHNIQUE_LABEL[artwork.technique] || ''
+  const meta = [artwork.uploadedByName, fmt(artwork.date)]
+    .filter(Boolean).join('  ·  ')
+
+  return (
+    <div style={{
+      position:'absolute', top:yPx, left:0, width:PAGE_W, height:bh,
+      background:'#ffffff',
+    }}>
+      <div style={{
+        position:'absolute', top:0, left:0, width:ACCENT_W, height:bh,
+        background: TECHNIQUE_ACCENT[artwork.technique] || TECHNIQUE_ACCENT.otro,
+      }} />
+
+      <div style={{
+        position:'absolute', top:V_PAD, left:imgX,
+        width:imgSz, height:imgSz,
+        background:'rgb(238,238,238)',
+        display:'flex', alignItems:'center', justifyContent:'center',
+        overflow:'hidden',
+      }}>
+        {artwork.photo && (
+          <img src={artwork.photo} alt={artwork.title}
+            style={{ maxWidth:'100%', maxHeight:'100%', objectFit:'contain', display:'block' }} />
+        )}
+      </div>
+
+      <div style={{
+        position:'absolute',
+        top: V_PAD + Math.round(bh * 0.03),
+        left:tx, width:tw,
+        display:'flex', flexDirection:'column', gap: Math.round(bh * 0.02),
+      }}>
+        <div style={{
+          fontFamily:BODY_FONT, fontWeight:700,
+          fontSize: Math.round(bh * 0.055),
+          color:'#2c2520',
+        }}>
+          {artwork.title}
+        </div>
+        <div style={{
+          fontFamily:BODY_FONT, fontStyle:'italic',
+          fontSize: Math.round(bh * 0.038),
+          color:'#9b8ca8',
+        }}>
+          {techLabel}
+        </div>
+        {note && (
+          <div style={{
+            fontFamily:BODY_FONT,
+            fontSize: Math.round(bh * 0.038),
+            color:'#5a4a3a', lineHeight:1.4,
+            display:'-webkit-box', WebkitLineClamp:4, WebkitBoxOrient:'vertical',
+            overflow:'hidden',
+          }}>
+            {note}
+          </div>
+        )}
+      </div>
+
+      {meta && (
+        <div style={{
+          position:'absolute',
+          bottom: V_PAD + 4,
+          left:tx, width:tw,
+          fontFamily:BODY_FONT,
+          fontSize: Math.round(bh * 0.032),
+          color:'#aaaaaa', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis',
+        }}>
+          {meta}
+        </div>
+      )}
+
+      <Sep blockH={bh} />
+    </div>
+  )
+}
+
+// ─── Artwork text block ───────────────────────────────────────────────────────
+function ArtworkTextBlock({ yPx, artwork }) {
+  const bh = BH_SMALL
+  const tx = ACCENT_W + 23
+  const tw = PAGE_W - tx - H_PAD
+
+  const techLabel = TECHNIQUE_LABEL[artwork.technique] || ''
+  const note = artwork.note
+    ? (artwork.note.length > 140 ? artwork.note.slice(0,140) + '…' : artwork.note)
+    : ''
+
+  const meta = [artwork.uploadedByName, fmt(artwork.date)]
+    .filter(Boolean).join('  ·  ')
+
+  return (
+    <div style={{
+      position:'absolute', top:yPx, left:0, width:PAGE_W, height:bh,
+      background:'rgb(253,250,245)',
+    }}>
+      <div style={{
+        position:'absolute', top:0, left:0, width:ACCENT_W, height:bh,
+        background: TECHNIQUE_ACCENT[artwork.technique] || TECHNIQUE_ACCENT.otro,
+      }} />
+
+      <div style={{
+        position:'absolute',
+        left:tx, top: Math.round(bh * 0.20), width:tw,
+        fontFamily:BODY_FONT, fontWeight:700,
+        fontSize: Math.round(bh * 0.115),
+        color:'#2c2520',
+        whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis',
+      }}>
+        {techLabel}{'  '}{artwork.title}
+      </div>
+
+      {note && (
+        <div style={{
+          position:'absolute',
+          left:tx, top: Math.round(bh * 0.44), width:tw,
+          fontFamily:BODY_FONT,
+          fontSize: Math.round(bh * 0.088),
+          color:'#5a4a3a', lineHeight:1.35,
+          display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical',
+          overflow:'hidden',
+        }}>
+          {note}
+        </div>
+      )}
+
+      {meta && (
+        <div style={{
+          position:'absolute',
+          left:tx, width:tw,
+          bottom: Math.round(bh * 0.07),
+          fontFamily:BODY_FONT,
+          fontSize: Math.round(bh * 0.074),
+          color:'#aaaaaa', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis',
+        }}>
+          {meta}
+        </div>
+      )}
+
+      <Sep blockH={bh} />
+    </div>
+  )
+}
+
 // ─── Main export ──────────────────────────────────────────────────────────────
 
 /**
  * Renders one full A4 preview page from an array of packed blocks.
  *
- * blocks: [{ kind:'cover'|'photo'|'text', entry, yPx, height }]
- * allEntries: full filtered entries array (used by cover block for date range + count)
+ * blocks: [{ kind:'cover'|'photo'|'text'|'art-photo'|'art-text', entry, yPx, height }]
+ * allEntries: full filtered entries/artworks array (used by cover block for date range + count)
  */
-export function CompactPage({ blocks, allEntries }) {
+export function CompactPage({ blocks, allEntries, mode }) {
   return (
     <div style={{
       width:PAGE_W, height:PAGE_H,
@@ -366,10 +534,16 @@ export function CompactPage({ blocks, allEntries }) {
     }}>
       {blocks.map((block, i) => {
         if (block.kind === 'cover') {
-          return <CoverBlock key={i} yPx={block.yPx} allEntries={allEntries} />
+          return <CoverBlock key={i} yPx={block.yPx} allEntries={allEntries} mode={mode} />
         }
         if (block.kind === 'photo') {
           return <PhotoBlock key={block.entry.id} yPx={block.yPx} entry={block.entry} />
+        }
+        if (block.kind === 'art-photo') {
+          return <ArtworkPhotoBlock key={block.entry.id} yPx={block.yPx} artwork={block.entry} />
+        }
+        if (block.kind === 'art-text') {
+          return <ArtworkTextBlock key={block.entry.id} yPx={block.yPx} artwork={block.entry} />
         }
         return <TextBlock key={block.entry.id} yPx={block.yPx} entry={block.entry} />
       })}
