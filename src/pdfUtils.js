@@ -35,8 +35,8 @@ const TYPE_ACCENT = {
 const DEFAULT_ACCENT = [240, 236, 250]
 
 const TYPE_LABEL = {
-  frase:'Frase', creacion:'Creacion', foto:'Foto',
-  hito:'Hito',   cancion:'Cancion',  recuerdo:'Recuerdo',
+  frase:'Quote', creacion:'Creation', foto:'Photo',
+  hito:'Milestone', cancion:'Song', recuerdo:'Memory',
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -333,7 +333,7 @@ const TECHNIQUE_ACCENT = {
 }
 
 const TECHNIQUE_LABEL = {
-  dibujo: 'Dibujo', pintura: 'Pintura', manualidad: 'Manualidad', otro: 'Otro',
+  dibujo: 'Drawing', pintura: 'Painting', manualidad: 'Craft', otro: 'Other',
 }
 
 const ARTWORK_LOCATION_LABELS = {
