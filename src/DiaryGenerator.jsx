@@ -128,10 +128,12 @@ export default function DiaryGenerator({ entries, artworks = [] }) {
     const entry = {
       id:          crypto.randomUUID(),
       generatedAt: new Date().toISOString(),
+      mode,
       dateFrom,
       dateTo,
       types:       [...selectedTypes],
-      entryCount:  filtered.length,
+      techs:       [...selectedTechs],
+      entryCount:  mode === 'arte' ? filteredArt.length : filtered.length,
       pageCount:   pages.length,
     }
     saveToHistory(entry)
@@ -148,13 +150,24 @@ export default function DiaryGenerator({ entries, artworks = [] }) {
   function handleDownloadFromHistory(h) {
     setDateFrom(h.dateFrom || '')
     setDateTo(h.dateTo   || '')
-    setSelectedTypes(new Set(h.types))
-    const reFiltered = entries.filter(e => {
-      if (h.dateFrom && e.date < h.dateFrom) return false
-      if (h.dateTo   && e.date > h.dateTo)   return false
-      return h.types.includes(e.type)
-    })
-    setPages(compactPages(reFiltered))
+    setMode(h.mode || 'recuerdos')
+    if (h.mode === 'arte') {
+      setSelectedTechs(new Set(h.techs || ALL_TECHNIQUES))
+      const reFiltered = artworks.filter(a => {
+        if (h.dateFrom && a.date < h.dateFrom) return false
+        if (h.dateTo   && a.date > h.dateTo)   return false
+        return (h.techs || ALL_TECHNIQUES).includes(a.technique)
+      })
+      setPages(compactArtworkPages(reFiltered))
+    } else {
+      setSelectedTypes(new Set(h.types))
+      const reFiltered = entries.filter(e => {
+        if (h.dateFrom && e.date < h.dateFrom) return false
+        if (h.dateTo   && e.date > h.dateTo)   return false
+        return h.types.includes(e.type)
+      })
+      setPages(compactPages(reFiltered))
+    }
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
@@ -324,10 +337,12 @@ export default function DiaryGenerator({ entries, artworks = [] }) {
                       { day: '2-digit', month: 'short', year: 'numeric' })}
                   </strong>
                   <span>
+                    {h.mode === 'arte' ? '🎨 Art gallery' : '📔 Diary'}
+                    {' · '}
                     {h.dateFrom
                       ? `${fmtDate(h.dateFrom)} – ${h.dateTo ? fmtDate(h.dateTo) : 'today'}`
-                      : 'All memories'}
-                    {' · '}{h.entryCount} memor{h.entryCount !== 1 ? 'ies' : 'y'} · {h.pageCount} p.
+                      : (h.mode === 'arte' ? 'All artworks' : 'All memories')}
+                    {' · '}{h.entryCount} {h.mode === 'arte' ? `artwork${h.entryCount !== 1 ? 's' : ''}` : `memor${h.entryCount !== 1 ? 'ies' : 'y'}`} · {h.pageCount} p.
                   </span>
                 </div>
                 <div style={{ display:'flex', gap:6 }}>
